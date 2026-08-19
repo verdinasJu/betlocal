@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
+import { hasSupabase } from "@/lib/settings";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,9 +15,14 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const configured = hasSupabase();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!configured) {
+      toast.error("Supabase todavía no está configurado en este entorno.");
+      return;
+    }
     setLoading(true);
     const supabase = createClient();
 
@@ -129,13 +135,26 @@ export default function LoginPage() {
             />
           </div>
 
-          <Button type="submit" className="w-full" size="lg" disabled={loading}>
+          <Button
+            type="submit"
+            className="w-full"
+            size="lg"
+            disabled={loading || !configured}
+          >
             {loading
               ? "Un momento…"
               : mode === "login"
                 ? "Entrar"
                 : "Crear cuenta"}
           </Button>
+
+          {!configured && (
+            <p className="text-center text-xs text-ink-faint leading-relaxed">
+              Las cuentas se activan al configurar Supabase. Mientras tanto la
+              app funciona sin registro y tus ajustes se guardan en este
+              dispositivo.
+            </p>
+          )}
         </form>
 
         <p className="text-center text-xs text-ink-faint leading-relaxed">
