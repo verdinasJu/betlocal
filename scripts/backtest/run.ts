@@ -561,23 +561,68 @@ console.log(
 );
 
 console.log(`\nMisma estrategia candidata cambiando solo el ancla:\n`);
+const anchorRows = (["pinnacle", "exchange"] as const).map((source) => {
+  const res = runBacktest(bothAnchors, {
+    name: source,
+    fair: { timing: "close", source, method: "shin" },
+    bet: CANDIDATE.bet,
+    minEv: CANDIDATE.minEv,
+    minOdds: CANDIDATE.minOdds,
+    maxOdds: CANDIDATE.maxOdds,
+    staking: { kind: "flat", unit: FLAT_UNIT },
+    bankroll: BANKROLL,
+  });
+  return [source, String(res.bets), money(res.profit), pct(res.roi)];
+});
+console.log(table(["Ancla", "Apuestas", "Beneficio", "ROI"], anchorRows));
+
+// ---------------------------------------------------------------------------
+// 12. Escenario de una sola casa
+// ---------------------------------------------------------------------------
+console.log(`\n\n12. SI SOLO SE APUESTA EN UNA CASA (Bet365)\n`);
+console.log(
+  `Toda la ventaja medida viene de elegir, entre muchas casas, la que se ha`
+);
+console.log(
+  `desviado. Con una sola casa no hay nada que elegir. Agrupando las seis`
+);
+console.log(`ligas para tener muestra, con el tope de cuota ya aplicado:\n`);
+
+const single = pooled.filter((m) => m.season >= FROM);
+
 console.log(
   table(
-    ["Ancla", "Apuestas", "Beneficio", "ROI"],
-    (["pinnacle", "exchange"] as const).map((source) => {
-      const res = runBacktest(bothAnchors, {
-        name: source,
-        fair: { timing: "close", source, method: "shin" },
-        bet: CANDIDATE.bet,
-        minEv: CANDIDATE.minEv,
-        minOdds: CANDIDATE.minOdds,
-        maxOdds: CANDIDATE.maxOdds,
-        staking: { kind: "flat", unit: FLAT_UNIT },
-        bankroll: BANKROLL,
-      });
-      return [source, String(res.bets), money(res.profit), pct(res.roi)];
-    })
+    ["Momento", "EV min", "Apuestas", "Cuota", "Beneficio", "ROI", "CLV", "CLV>0"],
+    (["close", "open"] as const).flatMap((timing) =>
+      [0.0, 0.01, 0.02, 0.03].map((minEv) => {
+        const res = runBacktest(single, {
+          name: "bet365",
+          fair: { timing, source: "pinnacle", method: "shin" },
+          bet: { timing, source: "b365" },
+          minEv,
+          minOdds: CANDIDATE.minOdds,
+          maxOdds: CANDIDATE.maxOdds,
+          staking: { kind: "flat", unit: FLAT_UNIT },
+          bankroll: BANKROLL,
+        });
+        return [
+          timing === "close" ? "cierre" : "apertura",
+          pct(minEv, 0),
+          String(res.bets),
+          res.avgOdds.toFixed(2),
+          money(res.profit),
+          pct(res.roi),
+          res.avgClv !== undefined ? pct(res.avgClv) : "n/d",
+          res.positiveClvRate !== undefined ? pct(res.positiveClvRate, 1) : "n/d",
+        ];
+      })
+    )
   )
 );
+
+console.log(
+  `\nReferencia: la misma estrategia con acceso a todas las casas rinde`
+);
+console.log(`+1,5% fuera de muestra (seccion 10).`);
 
 console.log("");
