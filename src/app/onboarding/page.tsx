@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
-import { hasSupabase, saveSettings } from "@/lib/settings";
+import { DEFAULT_SETTINGS, hasSupabase, saveSettings } from "@/lib/settings";
 import { formatCurrency } from "@/lib/utils";
 
 const STEPS = ["Bankroll", "Riesgo", "Filtros"] as const;
@@ -25,11 +25,15 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(false);
 
   const [bankroll, setBankroll] = useState("");
-  const [kellyFraction, setKellyFraction] = useState(0.25);
-  const [maxStakePct, setMaxStakePct] = useState("2");
-  const [minEv, setMinEv] = useState("2");
-  const [minOdds, setMinOdds] = useState("1.50");
-  const [maxOdds, setMaxOdds] = useState("6.00");
+  const [kellyFraction, setKellyFraction] = useState(
+    DEFAULT_SETTINGS.kellyFraction
+  );
+  const [maxStakePct, setMaxStakePct] = useState(
+    String(DEFAULT_SETTINGS.maxStakePct)
+  );
+  const [minEv, setMinEv] = useState(String(DEFAULT_SETTINGS.minEvPct));
+  const [minOdds, setMinOdds] = useState(DEFAULT_SETTINGS.minOdds.toFixed(2));
+  const [maxOdds, setMaxOdds] = useState(DEFAULT_SETTINGS.maxOdds.toFixed(2));
 
   async function finish() {
     setLoading(true);
@@ -37,10 +41,11 @@ export default function OnboardingPage() {
     const values = {
       bankroll: Number(bankroll.replace(",", ".")) || 0,
       kellyFraction,
-      maxStakePct: Number(maxStakePct.replace(",", ".")) || 2,
-      minEvPct: Number(minEv.replace(",", ".")) || 2,
-      minOdds: Number(minOdds.replace(",", ".")) || 1.5,
-      maxOdds: Number(maxOdds.replace(",", ".")) || 6,
+      maxStakePct:
+        Number(maxStakePct.replace(",", ".")) || DEFAULT_SETTINGS.maxStakePct,
+      minEvPct: Number(minEv.replace(",", ".")) || DEFAULT_SETTINGS.minEvPct,
+      minOdds: Number(minOdds.replace(",", ".")) || DEFAULT_SETTINGS.minOdds,
+      maxOdds: Number(maxOdds.replace(",", ".")) || DEFAULT_SETTINGS.maxOdds,
     };
 
     saveSettings(values);

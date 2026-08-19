@@ -18,14 +18,21 @@ export type RiskSettings = {
   maxOdds: number;
 };
 
+/**
+ * Los filtros de cuota no son arbitrarios: salen del backtest sobre 14
+ * temporadas y seis ligas (ver `docs/BACKTEST.md`). Por encima de cuota 3.5 el
+ * ROI se vuelve negativo de forma consistente, incluso cuando el EV calculado
+ * es alto — es el sesgo favorito/longshot: en cuotas largas las casas cargan el
+ * margen y un error pequeño de probabilidad se traga la ventaja entera.
+ */
 export const DEFAULT_SETTINGS: RiskSettings = {
   bankroll: 0,
   currency: "EUR",
   kellyFraction: 0.25,
   maxStakePct: 2,
   minEvPct: 2,
-  minOdds: 1.5,
-  maxOdds: 6,
+  minOdds: 1.2,
+  maxOdds: 3.5,
 };
 
 const KEY = "betlocal.settings.v1";

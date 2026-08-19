@@ -75,8 +75,11 @@ src/lib/
   settings.ts         Ajustes de riesgo en localStorage
   supabase/           client, server y middleware de sesión
 
+  backtest.ts         Motor de backtest sobre histórico
+
 scripts/
   generate-icons.mjs  Regenera los PNG de la PWA (npm run icons)
+  backtest/           Descarga de histórico e informe (npm run backtest)
 
 supabase/migrations/  auth/perfil → dominio deportivo
 docs/                 Investigación y decisiones técnicas
@@ -142,6 +145,24 @@ npm run lint
 
 ---
 
+## Backtest
+
+Valida la estrategia contra 14 temporadas de seis ligas europeas usando datos
+gratuitos, reutilizando las mismas funciones que la app.
+
+```bash
+npm run backtest:data   # descarga los CSV a data/raw (no versionados)
+npm run backtest        # imprime el informe completo
+```
+
+Conclusiones y límites en [`docs/BACKTEST.md`](./docs/BACKTEST.md). El resumen:
+la ventaja fuera de muestra es de **+1,5% de ROI**, viene de comparar precios
+entre casas (no de predecir partidos) y **no es estadísticamente
+significativa**. De ahí salen los filtros de cuota por defecto (1,20–3,50) y la
+decisión de priorizar la cobertura de casas sobre el modelado.
+
+---
+
 ## Migraciones Supabase
 
 Aplicar **en orden** (SQL Editor o CLI):
@@ -150,6 +171,7 @@ Aplicar **en orden** (SQL Editor o CLI):
 |---------|-----------|
 | `..._initial.sql` | `profiles` (bankroll, Kelly, filtros), trigger de alta, RLS |
 | `..._domain.sql` | `competitions`, `teams`, `matches`, `odds_snapshots`, `model_versions`, `predictions`, `bets` + RLS |
+| `..._odds_filter_defaults.sql` | Filtros de cuota por defecto según el backtest |
 
 Con el CLI ya enlazado basta con:
 
