@@ -145,6 +145,35 @@ npm run lint
 
 ---
 
+## Ingesta de cuotas
+
+`GET /api/cron/odds`, protegida con `Authorization: Bearer $CRON_SECRET`. Trae
+los partidos próximos con las cuotas de todas las casas disponibles y guarda un
+snapshot solo de las que han cambiado.
+
+El planificador es un **workflow de GitHub Actions**
+([`ingest-odds.yml`](./.github/workflows/ingest-odds.yml)) y no un cron de
+Vercel, porque el plan gratuito de Vercel solo ejecuta cron una vez al día y
+aquí hace falta más frecuencia para capturar el movimiento de línea. Necesita
+dos cosas configuradas en el repositorio: el secreto `CRON_SECRET` y la variable
+`APP_URL`.
+
+Sobre la cuota del proveedor: el plan gratuito son 500 peticiones al mes y **cada
+llamada cuesta un crédito por mercado y por región**. Por eso la ruta lleva un
+guardián que solo llama al proveedor si algún partido arranca en las próximas 14
+horas o si toca el refresco diario de calendario. Para saltárselo:
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" \
+  "https://betlocal.vercel.app/api/cron/odds?force=1"
+```
+
+La cuota de cierre se marca con la función SQL `mark_closing_odds()`, sobre datos
+que ya están en la base: gastar cuota de API en algo que ya sabemos sería
+tirarla.
+
+---
+
 ## Backtest
 
 Valida la estrategia contra 14 temporadas de seis ligas europeas usando datos
