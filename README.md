@@ -88,15 +88,33 @@ docs/                 Investigación y decisiones técnicas
 
 ### 1. Supabase
 
-1. Crea un proyecto en [supabase.com](https://supabase.com)
-2. **Settings → API**: copia Project URL y `anon` key
-3. **SQL Editor**: ejecuta las migraciones de `supabase/migrations/` **en orden**
-4. Auth Email activo (en desarrollo puedes desactivar la confirmación de email)
+El proyecto ya existe (ref `vajjlrqvnwddpjfdxfev`, región `eu-west-1`). Para
+trabajar contra él desde una máquina nueva:
+
+```bash
+npx supabase login
+npx supabase link --project-ref vajjlrqvnwddpjfdxfev
+npx supabase db push        # aplica las migraciones pendientes
+npx supabase config push    # aplica supabase/config.toml (Auth)
+```
+
+La contraseña de la base de datos vive en `.supabase-db-password.txt`, fuera de
+git. Si se pierde se regenera en **Settings → Database → Reset password**.
+
+El alta de usuarios no pide confirmación de email, así que registrarse deja
+sesión iniciada al momento. Eso se cambia en `config.toml`
+(`auth.email.enable_confirmations`), no en el dashboard, para que quede versionado.
 
 ### 2. Entorno
 
 ```bash
 cp .env.example .env.local
+```
+
+O, si ya tienes acceso al proyecto de Vercel, directamente:
+
+```bash
+npx vercel env pull .env.local
 ```
 
 Rellena como mínimo:
