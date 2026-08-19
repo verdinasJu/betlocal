@@ -1,0 +1,58 @@
+name: Ingesta de cuotas
+
+# El plan gratuito de Vercel solo ejecuta cron una vez al día, y para capturar
+# el movimiento de línea antes del pitido inicial hace falta más frecuencia.
+# El propio endpoint decide si merece la pena gastar cuota de la API, así que
+# disparar cada dos horas no consume 12 créditos diarios: solo gasta cuando hay
+# partidos cerca.
+
+on:
+  schedule:
+    - cron: "15 */2 * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Ignorar el guardián de cuota y llamar al proveedor"
+        type: boolean
+        default: false
+
+concurrency:
+  group: ingest-odds
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Lanzar ingesta
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          FORCE: ${{ inputs.force == true && '1' || '0' }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${APP_URL:-}" ] || [ -z "${CRON_SECRET:-}" ]; then
+            echo "Falta la variable APP_URL o el secreto CRON_SECRET del repositorio"
+            exit 1
+          fi
+
+          status=$(curl -sS --max-time 90 \
+            -o response.json -w '%{http_code}' \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${APP_URL}/api/cron/odds?force=${FORCE}")
+
+          echo "HTTP ${status}"
+          cat response.json
+          echo
+
+          if [ "${status}" != "200" ]; then
+            exit 1
+          fi
+
+          # Aviso temprano: quedarse sin cuota a mitad de mes deja la app ciega.
+          remaining=$(grep -o '"remaining":[0-9]*' response.json | head -1 | cut -d: -f2 || true)
+          if [ -n "${remaining:-}" ] && [ "${remaining}" -lt 50 ]; then
+            echo "::warning::Quedan ${remaining} peticiones de The Odds API este mes"
+          fi
