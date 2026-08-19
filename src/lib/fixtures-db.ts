@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { fetchAllRows } from "@/lib/supabase/paginate";
 import { buildFixtures, type OddsRow } from "@/lib/fixtures";
 import type { Fixture } from "@/lib/recommendations";
 
@@ -38,18 +39,25 @@ export async function loadFixturesFromDb(): Promise<Fixture[]> {
 
   if (error || !matches?.length) return [];
 
-  const [{ data: teams }, { data: competitions }, { data: odds }] =
-    await Promise.all([
-      supabase.from("teams").select("id, name"),
-      supabase.from("competitions").select("id, name"),
+  const matchIds = matches.map((m) => m.id);
+
+  const [{ data: teams }, { data: competitions }, odds] = await Promise.all([
+    supabase.from("teams").select("id, name"),
+    supabase.from("competitions").select("id, name"),
+    // Paginado: son ~117 cotizaciones por partido y PostgREST corta en 1000
+    // devolviendo un 200 sin avisar de que faltan filas.
+    fetchAllRows<OddsRow>((from, to) =>
       supabase
         .from("latest_odds")
         .select("match_id, bookmaker, market, selection, line, odds")
-        .in(
-          "match_id",
-          matches.map((m) => m.id)
-        ),
-    ]);
+        .in("match_id", matchIds)
+        .order("match_id", { ascending: true })
+        .order("bookmaker", { ascending: true })
+        .order("market", { ascending: true })
+        .order("selection", { ascending: true })
+        .range(from, to)
+    ).catch(() => [] as OddsRow[]),
+  ]);
 
   const teamName = new Map((teams ?? []).map((t) => [t.id, t.name]));
   const competitionName = new Map(
@@ -64,6 +72,6 @@ export async function loadFixturesFromDb(): Promise<Fixture[]> {
       away_team: teamName.get(m.away_team_id) ?? m.away_team_id,
       competition: competitionName.get(m.competition_id) ?? m.competition_id,
     })),
-    (odds ?? []) as OddsRow[]
+    odds
   );
 }

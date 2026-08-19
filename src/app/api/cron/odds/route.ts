@@ -14,6 +14,7 @@
 
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchAllRows } from "@/lib/supabase/paginate";
 import { fetchOdds, OddsApiError } from "@/lib/providers/the-odds-api";
 import {
   normalizeEvent,
@@ -27,6 +28,15 @@ import {
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
+
+type PreviousOdds = {
+  match_id: string;
+  bookmaker: string;
+  market: string;
+  selection: string;
+  line: number | null;
+  odds: number;
+};
 
 const COMPETITION_ID = "ESP.1";
 const SPORT_KEY = process.env.ODDS_SPORT_KEY ?? "soccer_spain_la_liga";
@@ -227,23 +237,36 @@ export async function GET(request: Request) {
   }
 
   // Última cuota conocida de cada cotización, para insertar solo los cambios.
-  const { data: previous, error: previousError } = await supabase
-    .from("latest_odds")
-    .select("match_id, bookmaker, market, selection, line, odds")
-    .in(
-      "match_id",
-      matches.map((m) => m.id)
+  // Se pagina: son ~117 filas por partido y PostgREST corta en 1000, así que sin
+  // paginar las cotizaciones que quedaran fuera parecerían nuevas y se
+  // reinsertarían en cada ejecución.
+  let previous: PreviousOdds[];
+  try {
+    previous = await fetchAllRows<PreviousOdds>((from, to) =>
+      supabase
+        .from("latest_odds")
+        .select("match_id, bookmaker, market, selection, line, odds")
+        .in(
+          "match_id",
+          matches.map((m) => m.id)
+        )
+        .order("match_id", { ascending: true })
+        .order("bookmaker", { ascending: true })
+        .order("market", { ascending: true })
+        .order("selection", { ascending: true })
+        .range(from, to)
     );
-
-  if (previousError) {
+  } catch (error) {
     return NextResponse.json(
-      { error: `Cuotas previas: ${previousError.message}` },
+      {
+        error: `Cuotas previas: ${error instanceof Error ? error.message : "desconocido"}`,
+      },
       { status: 500 }
     );
   }
 
   const latestOdds = new Map<string, number>(
-    (previous ?? []).map((row) => [
+    previous.map((row) => [
       snapshotKey({
         matchId: row.match_id,
         bookmaker: row.bookmaker,

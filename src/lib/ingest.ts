@@ -106,6 +106,16 @@ function marketKeyFor(providerKey: string): MarketKey | null {
       return "totals";
     case "spreads":
       return "ah";
+
+    /**
+     * `h2h_lay` son las cuotas de *lay* de los exchanges: apostar CONTRA un
+     * resultado. Se descartan a propósito. Son sistemáticamente más altas que
+     * las de back, así que tratarlas como una cuota normal generaría ventajas
+     * enormes e imaginarias justo en las casas que usamos como ancla.
+     */
+    case "h2h_lay":
+      return null;
+
     default:
       return null;
   }
