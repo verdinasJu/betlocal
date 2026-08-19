@@ -1,0 +1,93 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: "Inter";
+  --font-mono: "JetBrains Mono";
+
+  --ink: #e8eef6;
+  --ink-muted: #93a4b8;
+  --ink-faint: #5c6f85;
+
+  --surface: #0e1520;
+  --surface-2: #141d2b;
+  --surface-3: #1c2838;
+  --line: #223044;
+
+  --brand: #10b981;
+  --brand-dark: #059669;
+
+  --value: #22c55e;
+  --value-muted: #16a34a;
+  --negative: #f43f5e;
+
+  --canvas-from: #05080c;
+  --canvas-via: #070b12;
+  --canvas-to: #060a10;
+
+  --background: var(--canvas-from);
+  --foreground: var(--ink);
+}
+
+@layer base {
+  * {
+    @apply border-line;
+  }
+
+  html {
+    @apply antialiased;
+    color-scheme: dark;
+  }
+
+  body {
+    @apply min-h-dvh text-ink;
+    font-family: var(--font-sans), system-ui, sans-serif;
+    background:
+      radial-gradient(1100px 560px at 8% -8%, rgba(16, 185, 129, 0.12), transparent 55%),
+      radial-gradient(900px 480px at 100% 0%, rgba(56, 189, 248, 0.08), transparent 52%),
+      linear-gradient(170deg, var(--canvas-from), var(--canvas-via) 45%, var(--canvas-to));
+    background-attachment: fixed;
+  }
+}
+
+@layer utilities {
+  .font-num {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .animate-rise {
+    animation: rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-fade {
+    animation: fade 0.45s ease both;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
