@@ -1,6 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+/** Rutas cuyo contenido vive en la base de datos y por tanto necesitan cuenta. */
+const PROTECTED_PREFIXES = ["/apuestas", "/rendimiento"];
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -31,12 +34,8 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   const path = request.nextUrl.pathname;
-  const isAuthRoute = path.startsWith("/login");
+
   const isPublicAsset =
     path.startsWith("/_next") ||
     path.startsWith("/icons") ||
@@ -48,44 +47,28 @@ export async function updateSession(request: NextRequest) {
 
   if (isPublicAsset) return supabaseResponse;
 
-  if (!user && !isAuthRoute) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Solo lo que persiste en servidor exige cuenta. Las recomendaciones y los
+  // ajustes de riesgo funcionan sin registro, guardados en el dispositivo.
+  const requiresAuth = PROTECTED_PREFIXES.some((prefix) =>
+    path.startsWith(prefix)
+  );
+
+  if (!user && requiresAuth) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
+    url.searchParams.set("next", path);
     return NextResponse.redirect(url);
   }
 
-  if (user && isAuthRoute) {
+  if (user && path.startsWith("/login")) {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = request.nextUrl.searchParams.get("next") ?? "/";
+    url.search = "";
     return NextResponse.redirect(url);
-  }
-
-  if (user && !isAuthRoute && path !== "/onboarding") {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("onboarding_completed")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (!profile || !profile.onboarding_completed) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/onboarding";
-      return NextResponse.redirect(url);
-    }
-  }
-
-  if (user && path === "/onboarding") {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("onboarding_completed")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (profile?.onboarding_completed) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/";
-      return NextResponse.redirect(url);
-    }
   }
 
   return supabaseResponse;

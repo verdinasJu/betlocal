@@ -6,7 +6,7 @@ export default function BetsPage() {
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Mis apuestas</h1>
         <p className="text-sm text-ink-muted">
-          Registro manual de lo que apuestas y a qué cuota
+          Registro guardado en tu cuenta, con la cuota que tomaste
         </p>
       </header>
 

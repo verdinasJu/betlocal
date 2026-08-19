@@ -3,10 +3,9 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AccountCard } from "@/components/AccountCard";
 import { BankrollCard } from "@/components/BankrollCard";
-import { SignOutButton } from "@/components/SignOutButton";
 import { useSettings } from "@/hooks/useSettings";
-import { hasSupabase } from "@/lib/settings";
 
 export default function SettingsPage() {
   const { settings, update } = useSettings();
@@ -79,7 +78,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {hasSupabase() && <SignOutButton />}
+      <AccountCard />
 
       <p className="text-xs text-ink-faint leading-relaxed">
         BetLocal es una herramienta de análisis estadístico. No es una casa de

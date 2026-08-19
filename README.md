@@ -21,16 +21,25 @@ Herramienta de análisis cuantitativo de mercados de fútbol (LaLiga). Cruza las
 
 ## Qué hace
 
-| Zona | Estado | Qué hace |
-|------|--------|----------|
-| **Login / registro** | ✅ | Auth con email + contraseña (Supabase) |
-| **Onboarding** | ✅ | Bankroll, fracción de Kelly, tope por apuesta, filtros de EV y cuota |
-| **Partidos** | 🚧 | Próximos partidos con cuota justa, EV y score por mercado |
-| **Mis apuestas** | 🚧 | Registro manual de apuestas y cuota tomada (para calcular CLV) |
-| **Rendimiento** | 🚧 | ROI, yield, CLV medio, Brier score y RPS del modelo |
-| **Ajustes** | ✅ | Bankroll, riesgo, cerrar sesión |
+| Zona | Cuenta | Estado | Qué hace |
+|------|--------|--------|----------|
+| **Hoy** | No | ✅ | Recomendaciones con cuota justa, EV, score y stake calculado |
+| **Ajustes** | No | ✅ | Bankroll, fracción de Kelly, tope por apuesta, filtros de EV y cuota |
+| **Onboarding** | No | ✅ | Configuración guiada inicial |
+| **Login / registro** | — | ✅ | Auth con email + contraseña (Supabase) |
+| **Mis apuestas** | Sí | 🚧 | Registro de apuestas y cuota tomada (para calcular CLV) |
+| **Rendimiento** | Sí | 🚧 | ROI, yield, CLV medio, Brier score y RPS del modelo |
 
 El flujo previsto: ingesta de cuotas y estadísticas → modelo → cuota justa y EV → tú consultas y decides → registras la apuesta → se compara con la cuota de cierre.
+
+### Modelo de acceso
+
+Las recomendaciones y los ajustes de riesgo funcionan **sin registro**: se guardan en el `localStorage` del dispositivo. La cuenta solo es necesaria para lo que tiene que persistir en servidor:
+
+- **Historial de apuestas**, que es el dato que tarda meses en acumularse y el único que permite demostrar si hay ventaja real.
+- **Sincronizar el bankroll** entre móvil y ordenador (`SettingsSync`: el perfil del servidor manda en la primera carga, después cada cambio se replica arriba).
+
+`PROTECTED_PREFIXES` en `src/lib/supabase/middleware.ts` define qué rutas exigen sesión. Si faltan las variables de Supabase, el middleware deja pasar todo y la app funciona en modo local.
 
 ---
 
@@ -41,7 +50,7 @@ El flujo previsto: ingesta de cuotas y estadísticas → modelo → cuota justa 
 - **Vercel** hosting y cron jobs
 - **Recharts** gráficas
 
-El registro y la protección de rutas replican el patrón de [que-desastre](https://github.com/verdinasJu/que-desastre): middleware de sesión, tabla `profiles` creada por trigger, y redirección forzada a `/onboarding` hasta completarlo.
+El registro replica el patrón de [que-desastre](https://github.com/verdinasJu/que-desastre): middleware de sesión con `@supabase/ssr` y tabla `profiles` creada por trigger al dar de alta el usuario. La diferencia es que aquí la sesión no se exige para navegar, solo para las rutas que leen o escriben en la base de datos.
 
 ---
 
@@ -52,14 +61,22 @@ src/app/
   login/              Auth (entrar / crear cuenta)
   onboarding/         Bankroll y perfil de riesgo
   (app)/              Shell con nav inferior
-    page.tsx          Partidos
-    apuestas/
-    rendimiento/
+    page.tsx          Hoy: recomendaciones
+    apuestas/         Requiere cuenta
+    rendimiento/      Requiere cuenta
     ajustes/
 
 src/lib/
+  odds.ts             Margen, cuota justa (Shin), EV, Kelly, CLV
+  poisson.ts          Matriz de resultados, Dixon-Coles, derivación de mercados
+  metrics.ts          Brier, RPS, log loss, calibración
+  recommendations.ts  Lectura de partido anclada al mercado
+  demo-fixtures.ts    Datos de demo hasta conectar proveedores
+  settings.ts         Ajustes de riesgo en localStorage
   supabase/           client, server y middleware de sesión
-  utils.ts            cn, formatos de moneda, cuota y EV
+
+scripts/
+  generate-icons.mjs  Regenera los PNG de la PWA (npm run icons)
 
 supabase/migrations/  001 (auth) → 002 (dominio deportivo)
 docs/                 Investigación y decisiones técnicas

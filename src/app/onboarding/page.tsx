@@ -51,31 +51,29 @@ export default function OnboardingPage() {
         data: { user },
       } = await supabase.auth.getUser();
 
-      if (!user) {
-        toast.error("Sesión no válida");
-        setLoading(false);
-        return;
-      }
+      // Sin sesión no es un error: los ajustes quedan guardados en el
+      // dispositivo y se subirán en cuanto la cuenta exista.
+      if (user) {
+        const { error } = await supabase.from("profiles").upsert({
+          id: user.id,
+          bankroll: values.bankroll,
+          initial_bankroll: values.bankroll,
+          currency: "EUR",
+          kelly_fraction: values.kellyFraction,
+          max_stake_pct: values.maxStakePct,
+          min_ev_pct: values.minEvPct,
+          min_odds: values.minOdds,
+          max_odds: values.maxOdds,
+          onboarding_completed: true,
+          onboarding_completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
 
-      const { error } = await supabase.from("profiles").upsert({
-        id: user.id,
-        bankroll: values.bankroll,
-        initial_bankroll: values.bankroll,
-        currency: "EUR",
-        kelly_fraction: values.kellyFraction,
-        max_stake_pct: values.maxStakePct,
-        min_ev_pct: values.minEvPct,
-        min_odds: values.minOdds,
-        max_odds: values.maxOdds,
-        onboarding_completed: true,
-        onboarding_completed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-
-      if (error) {
-        toast.error(error.message);
-        setLoading(false);
-        return;
+        if (error) {
+          toast.error(error.message);
+          setLoading(false);
+          return;
+        }
       }
     }
 
