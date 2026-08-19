@@ -78,7 +78,7 @@ src/lib/
 scripts/
   generate-icons.mjs  Regenera los PNG de la PWA (npm run icons)
 
-supabase/migrations/  001 (auth) → 002 (dominio deportivo)
+supabase/migrations/  auth/perfil → dominio deportivo
 docs/                 Investigación y decisiones técnicas
 ```
 
@@ -130,10 +130,16 @@ Aplicar **en orden** (SQL Editor o CLI):
 
 | Archivo | Contenido |
 |---------|-----------|
-| `001_initial.sql` | `profiles` (bankroll, Kelly, filtros), trigger de alta, RLS |
-| `002_domain.sql` | `competitions`, `teams`, `matches`, `odds_snapshots`, `model_versions`, `predictions`, `bets` + RLS |
+| `..._initial.sql` | `profiles` (bankroll, Kelly, filtros), trigger de alta, RLS |
+| `..._domain.sql` | `competitions`, `teams`, `matches`, `odds_snapshots`, `model_versions`, `predictions`, `bets` + RLS |
 
-Diseño de permisos: el catálogo (partidos, cuotas, predicciones) es de **lectura** para usuarios autenticados y solo la ingesta (`service_role`) escribe. Las apuestas son privadas por usuario.
+Con el CLI ya enlazado basta con:
+
+```bash
+npx supabase db push
+```
+
+Diseño de permisos: el catálogo (partidos, cuotas, predicciones) es de **lectura pública** (también sin cuenta, igual que las recomendaciones) y solo la ingesta (`service_role`) escribe. Las apuestas son privadas por usuario vía RLS.
 
 ---
 

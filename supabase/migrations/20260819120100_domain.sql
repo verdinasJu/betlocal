@@ -1,6 +1,7 @@
 -- BetLocal — dominio deportivo
--- Datos de catálogo (equipos, partidos, cuotas, predicciones) son PÚBLICOS en lectura
--- para usuarios autenticados; solo la ingesta (service_role) escribe.
+-- Datos de catálogo (equipos, partidos, cuotas, predicciones) son PÚBLICOS en lectura,
+-- incluso sin cuenta: la app permite consultar recomendaciones sin registrarse.
+-- Solo la ingesta (service_role) escribe.
 -- Las apuestas del usuario son privadas vía RLS.
 
 -- ---------------------------------------------------------------------------
@@ -148,38 +149,38 @@ alter table public.model_versions enable row level security;
 alter table public.predictions    enable row level security;
 alter table public.bets           enable row level security;
 
-grant select on table public.competitions   to authenticated;
-grant select on table public.teams          to authenticated;
-grant select on table public.matches        to authenticated;
-grant select on table public.odds_snapshots to authenticated;
-grant select on table public.model_versions to authenticated;
-grant select on table public.predictions    to authenticated;
+grant select on table public.competitions   to anon, authenticated;
+grant select on table public.teams          to anon, authenticated;
+grant select on table public.matches        to anon, authenticated;
+grant select on table public.odds_snapshots to anon, authenticated;
+grant select on table public.model_versions to anon, authenticated;
+grant select on table public.predictions    to anon, authenticated;
 grant select, insert, update, delete on table public.bets to authenticated;
 
--- Catálogo: lectura para autenticados, escritura solo service_role (ingesta)
+-- Catálogo: lectura abierta, escritura solo service_role (ingesta)
 drop policy if exists "competitions_read" on public.competitions;
 create policy "competitions_read" on public.competitions
-  for select to authenticated using (true);
+  for select to anon, authenticated using (true);
 
 drop policy if exists "teams_read" on public.teams;
 create policy "teams_read" on public.teams
-  for select to authenticated using (true);
+  for select to anon, authenticated using (true);
 
 drop policy if exists "matches_read" on public.matches;
 create policy "matches_read" on public.matches
-  for select to authenticated using (true);
+  for select to anon, authenticated using (true);
 
 drop policy if exists "odds_snapshots_read" on public.odds_snapshots;
 create policy "odds_snapshots_read" on public.odds_snapshots
-  for select to authenticated using (true);
+  for select to anon, authenticated using (true);
 
 drop policy if exists "model_versions_read" on public.model_versions;
 create policy "model_versions_read" on public.model_versions
-  for select to authenticated using (true);
+  for select to anon, authenticated using (true);
 
 drop policy if exists "predictions_read" on public.predictions;
 create policy "predictions_read" on public.predictions
-  for select to authenticated using (true);
+  for select to anon, authenticated using (true);
 
 -- Bets: cada usuario solo ve y toca las suyas
 drop policy if exists "bets_select_own" on public.bets;
