@@ -10,6 +10,11 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+/** Modos de pregunta clásica: nunca deben meter fichas `pair`. */
+function answerable(pool: StudyCard[]): StudyCard[] {
+  return pool.filter((c) => c.kind === "mcq" || c.kind === "tf");
+}
+
 /** Elige fichas según el modo de juego. */
 export function pickCards(
   course: Course,
@@ -20,67 +25,65 @@ export function pickCards(
   let pool = course.cards;
   if (topicId) pool = pool.filter((c) => c.topicId === topicId);
 
-  const ids = pool.map((c) => c.id);
-  const byId = new Map(pool.map((c) => [c.id, c]));
-
-  let chosenIds: string[] = [];
+  let working: StudyCard[] = pool;
 
   switch (mode.id as GameModeId) {
+    case "pairs":
+      working = pool.filter((c) => c.kind === "pair");
+      break;
+    case "trap":
+      working = pool.filter((c) => c.kind === "tf");
+      break;
+    case "boss":
+      working = answerable(pool).filter((c) => c.difficulty >= 2);
+      if (!working.length) working = answerable(pool);
+      break;
     case "revenge": {
+      const base = answerable(pool);
+      const ids = base.map((c) => c.id);
       const weak = weakCardIds(ids, map);
-      chosenIds = weak.length ? weak : dueCardIds(ids, map);
+      const due = dueCardIds(ids, map);
+      const pick = weak.length ? weak : due.length ? due : ids;
+      working = base.filter((c) => pick.includes(c.id));
       break;
     }
-    case "boss": {
-      const hard = pool.filter((c) => c.difficulty >= 2);
-      chosenIds = shuffle(hard.map((c) => c.id));
-      break;
-    }
-    case "trap": {
-      chosenIds = shuffle(
-        pool.filter((c) => c.kind === "tf").map((c) => c.id)
-      );
-      break;
-    }
-    case "pairs": {
-      chosenIds = shuffle(
-        pool.filter((c) => c.kind === "pair").map((c) => c.id)
-      );
-      break;
-    }
-    case "explain": {
-      chosenIds = shuffle(
-        pool
-          .filter((c) => c.kind === "mcq" || c.kind === "tf")
-          .map((c) => c.id)
-      );
-      break;
-    }
+    case "explain":
     case "quiz":
     case "streak":
-    case "blitz": {
-      if (topicId) {
-        chosenIds = shuffle(ids);
-        break;
-      }
+    case "blitz":
+    default:
+      working = answerable(pool);
+      break;
+  }
+
+  if (!working.length) {
+    // Último recurso: nunca devolver `pair` fuera del modo Parejas.
+    working =
+      mode.id === "pairs"
+        ? pool.filter((c) => c.kind === "pair")
+        : answerable(pool);
+  }
+
+  const ids = working.map((c) => c.id);
+  const byId = new Map(working.map((c) => [c.id, c]));
+
+  let ordered = shuffle(ids);
+
+  if (
+    mode.id === "quiz" ||
+    mode.id === "streak" ||
+    mode.id === "blitz" ||
+    mode.id === "explain"
+  ) {
+    if (!topicId) {
       const due = dueCardIds(ids, map);
       const rest = ids.filter((id) => !due.includes(id));
-      chosenIds = [...shuffle(due), ...shuffle(rest)];
-      break;
-    }
-    default: {
-      chosenIds = shuffle(ids);
-      break;
+      ordered = [...shuffle(due), ...shuffle(rest)];
     }
   }
 
-  if (!chosenIds.length) chosenIds = shuffle(ids);
-
-  const limit =
-    mode.id === "pairs" ? mode.targetCards : mode.targetCards;
-
-  return chosenIds
-    .slice(0, limit)
+  return ordered
+    .slice(0, mode.targetCards)
     .map((id) => byId.get(id)!)
     .filter(Boolean);
 }

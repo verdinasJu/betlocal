@@ -339,9 +339,17 @@ export function PlaySession({
             ) : null}
 
             {phase === "ask" && card.kind === "pair" ? (
-              <p className="text-sm text-ink-muted">
-                Esta ficha es de parejas: ábrela en el modo Parejas.
-              </p>
+              <div className="space-y-3">
+                <p className="text-sm text-ink-muted">
+                  Esta ficha es de vocabulario (parejas). En este modo se salta.
+                </p>
+                <Button onClick={next} className="w-full">
+                  Saltar
+                </Button>
+                <Button asChild variant="secondary" className="w-full">
+                  <Link href="/jugar/pairs">Abrir modo Parejas</Link>
+                </Button>
+              </div>
             ) : null}
 
             {phase === "feedback" ? (
