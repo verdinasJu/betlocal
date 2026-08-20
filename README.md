@@ -1,8 +1,7 @@
 # Estudia
 
 App móvil (PWA) para estudiar certificaciones y asignaturas con **tests, juegos
-y repetición espaciada**. Nació como reutilización del chasis de BetLocal
-(Next.js + Supabase + Vercel).
+y repetición espaciada**. Stack: Next.js + Supabase + Vercel.
 
 ## Cómo se usa
 

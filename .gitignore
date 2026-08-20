@@ -38,11 +38,6 @@ supabase/.branches/
 *.tsbuildinfo
 next-env.d.ts
 
-# python / modelado
-__pycache__/
-*.py[cod]
-.venv/
-venv/
-.ipynb_checkpoints/
+# datos locales (legacy)
 data/raw/
 data/interim/
