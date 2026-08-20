@@ -1,6 +1,8 @@
 # BetLocal
 
-Herramienta de análisis cuantitativo de mercados de fútbol (LaLiga). Cruza las cuotas del mercado con modelos propios para estimar **cuotas justas**, **valor esperado (EV)** y un **score** por mercado.
+Herramienta de análisis cuantitativo de mercados de fútbol. Quita el margen a las cuotas de las casas sharp para estimar la **cuota justa** de cada selección y, con ella, la **cuota objetivo**: la mínima que tienes que encontrar en tu casa para que la apuesta tenga valor.
+
+Cubre seis competiciones: LaLiga, LaLiga Hypermotion, Premier League, Serie A, Bundesliga y Ligue 1. Son las que valida el backtest, y con una sola liga no hay volumen suficiente para saber si la ventaja es real (ver [`docs/UNA-SOLA-CASA.md`](docs/UNA-SOLA-CASA.md)).
 
 > BetLocal **no** es una casa de apuestas, **no** acepta apuestas y **no** garantiza resultados. Es una herramienta de información estadística. +18. Apostar implica riesgo de pérdida total.
 
@@ -23,14 +25,16 @@ Herramienta de análisis cuantitativo de mercados de fútbol (LaLiga). Cruza las
 
 | Zona | Cuenta | Estado | Qué hace |
 |------|--------|--------|----------|
-| **Hoy** | No | ✅ | Recomendaciones con cuota justa, EV, score y stake calculado |
+| **Hoy** | No | ✅ | Cuota justa y cuota objetivo por selección; escribes la cuota de tu casa y devuelve EV y stake |
 | **Ajustes** | No | ✅ | Bankroll, fracción de Kelly, tope por apuesta, filtros de EV y cuota |
 | **Onboarding** | No | ✅ | Configuración guiada inicial |
 | **Login / registro** | — | ✅ | Auth con email + contraseña (Supabase) |
 | **Mis apuestas** | Sí | 🚧 | Registro de apuestas y cuota tomada (para calcular CLV) |
 | **Rendimiento** | Sí | 🚧 | ROI, yield, CLV medio, Brier score y RPS del modelo |
 
-El flujo previsto: ingesta de cuotas y estadísticas → modelo → cuota justa y EV → tú consultas y decides → registras la apuesta → se compara con la cuota de cierre.
+El flujo previsto: ingesta de cuotas → se quita el margen al ancla sharp → cuota justa y cuota objetivo → comparas con tu casa y decides → registras la apuesta → se compara con la cuota de cierre.
+
+Las casas que fijan el precio justo (Pinnacle, exchanges) no admiten clientes españoles. No son sitios donde apostar: son la referencia. Por eso la app no dice "apuesta aquí" sino "necesitas esta cuota".
 
 ### Modelo de acceso
 
@@ -147,9 +151,10 @@ npm run lint
 
 ## Ingesta de cuotas
 
-`GET /api/cron/odds`, protegida con `Authorization: Bearer $CRON_SECRET`. Trae
-los partidos próximos con las cuotas de todas las casas disponibles y guarda un
-snapshot solo de las que han cambiado.
+`GET /api/cron/odds`, protegida con `Authorization: Bearer $CRON_SECRET`. Recorre
+las competiciones de `src/lib/competitions.ts`, trae los partidos próximos con
+las cuotas de todas las casas disponibles y guarda un snapshot solo de las que
+han cambiado. Acepta `?competition=ESP.1` para ingerir una sola liga.
 
 El planificador es un **workflow de GitHub Actions**
 ([`ingest-odds.yml`](./.github/workflows/ingest-odds.yml)) y no un cron de
@@ -159,9 +164,12 @@ dos cosas configuradas en el repositorio: el secreto `CRON_SECRET` y la variable
 `APP_URL`.
 
 Sobre la cuota del proveedor: el plan gratuito son 500 peticiones al mes y **cada
-llamada cuesta un crédito por mercado y por región**. Por eso la ruta lleva un
-guardián que solo llama al proveedor si algún partido arranca en las próximas 14
-horas o si toca el refresco diario de calendario. Para saltárselo:
+llamada cuesta un crédito por mercado y por región**. Con seis ligas eso obliga a
+ser cuidadoso, así que la ruta lleva tres frenos: un guardián **por liga**, que
+solo llama al proveedor si esa competición tiene partido en las próximas 10 horas
+o si toca refrescar calendario; una sola región (`eu`, porque `uk` duplicaba el
+gasto para traer casas donde no se puede apostar desde España); y una reserva de
+créditos que corta la ingesta antes de agotar el mes. Para saltarse el guardián:
 
 ```bash
 curl -H "Authorization: Bearer $CRON_SECRET" \
@@ -187,8 +195,13 @@ npm run backtest        # imprime el informe completo
 Conclusiones y límites en [`docs/BACKTEST.md`](./docs/BACKTEST.md). El resumen:
 la ventaja fuera de muestra es de **+1,5% de ROI**, viene de comparar precios
 entre casas (no de predecir partidos) y **no es estadísticamente
-significativa**. De ahí salen los filtros de cuota por defecto (1,20–3,50) y la
-decisión de priorizar la cobertura de casas sobre el modelado.
+significativa**. De ahí salen los filtros de cuota por defecto (1,20–3,50).
+
+La sección 12 del informe mide el caso de apostar en una sola casa, que es el
+que aplica aquí. Está desarrollado en
+[`docs/UNA-SOLA-CASA.md`](./docs/UNA-SOLA-CASA.md), junto con lo que cambió en la
+app por ese motivo: el ancla, el umbral de EV, la ventana de partidos y el paso
+de "casa recomendada" a "cuota objetivo".
 
 ---
 
@@ -201,6 +214,10 @@ Aplicar **en orden** (SQL Editor o CLI):
 | `..._initial.sql` | `profiles` (bankroll, Kelly, filtros), trigger de alta, RLS |
 | `..._domain.sql` | `competitions`, `teams`, `matches`, `odds_snapshots`, `model_versions`, `predictions`, `bets` + RLS |
 | `..._odds_filter_defaults.sql` | Filtros de cuota por defecto según el backtest |
+| `..._odds_ingest.sql` | Vista `latest_odds` y función `mark_closing_odds()` |
+| `..._dedupe_odds_snapshots.sql` | Limpieza de snapshots duplicados |
+| `..._more_competitions.sql` | Las seis ligas que valida el backtest |
+| `..._min_ev_default.sql` | Umbral de EV por defecto al 1% |
 
 Con el CLI ya enlazado basta con:
 
@@ -224,6 +241,8 @@ Diseño de permisos: el catálogo (partidos, cuotas, predicciones) es de **lectu
 ## Documentación
 
 - [docs/INVESTIGACION.md](./docs/INVESTIGACION.md) — APIs de cuotas y estadísticas, metodología de las casas de apuestas, modelos, gestión de bankroll, análisis de competencia y marco legal.
+- [docs/BACKTEST.md](./docs/BACKTEST.md) — resultados de validar la estrategia contra 14 temporadas y sus límites.
+- [docs/UNA-SOLA-CASA.md](./docs/UNA-SOLA-CASA.md) — qué cambia cuando solo apuestas en una casa, y por qué la app da cuotas objetivo en vez de recomendar dónde apostar.
 
 ---
 

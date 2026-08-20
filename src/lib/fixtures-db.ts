@@ -3,9 +3,16 @@ import { fetchAllRows } from "@/lib/supabase/paginate";
 import { buildFixtures, type OddsRow } from "@/lib/fixtures";
 import type { Fixture } from "@/lib/recommendations";
 
-/** Ventana de partidos que se muestra en el panel. */
-const HORIZON_DAYS = 8;
-const MAX_MATCHES = 30;
+/**
+ * Ventana de partidos que se muestra en el panel.
+ *
+ * Corta a tres días a propósito. El backtest es tajante: la misma estrategia
+ * rinde positivo con cuotas de cierre y negativo con cuotas de apertura, así que
+ * enseñar partidos de la semana que viene solo invitaría a apostar temprano, que
+ * es justo lo que pierde dinero.
+ */
+const HORIZON_DAYS = 3;
+const MAX_MATCHES = 60;
 
 export type FixtureSource = "db" | "demo";
 

@@ -6,9 +6,14 @@
  * hace de ancla de mercado eficiente y cuál ofrece el mejor precio.
  */
 
-import { bookmakerName } from "@/lib/bookmakers";
 import { SHARP_ANCHORS } from "@/lib/ingest";
-import type { Fixture, Market, MarketKind, Selection } from "@/lib/recommendations";
+import type {
+  Fixture,
+  Market,
+  MarketKind,
+  Quote,
+  Selection,
+} from "@/lib/recommendations";
 
 export type OddsRow = {
   match_id: string;
@@ -146,15 +151,14 @@ export function buildFixtures(
       const selections: Selection[] = [];
 
       for (const selection of required) {
-        let bestOdds = 0;
-        let bestBookmaker = anchor;
-        for (const [book, quotes] of byBookmaker) {
-          const value = quotes.get(selection);
-          if (value !== undefined && value > bestOdds) {
-            bestOdds = value;
-            bestBookmaker = book;
-          }
+        const quotes: Quote[] = [];
+        for (const [book, bookQuotes] of byBookmaker) {
+          const value = bookQuotes.get(selection);
+          if (value !== undefined) quotes.push({ odds: value, bookmaker: book });
         }
+        if (!quotes.length) continue;
+
+        const best = quotes.reduce((a, b) => (b.odds > a.odds ? b : a));
 
         selections.push({
           key: selection,
@@ -166,8 +170,9 @@ export function buildFixtures(
             match.away_team
           ),
           sharpOdds: anchorQuotes.get(selection)!,
-          bestOdds,
-          bestBookmaker: bookmakerName(bestBookmaker),
+          bestOdds: best.odds,
+          bestBookmaker: best.bookmaker,
+          quotes,
         });
       }
 
@@ -187,7 +192,7 @@ export function buildFixtures(
       kickoff: match.kickoff_at,
       homeTeam: match.home_team,
       awayTeam: match.away_team,
-      sharpBookmaker: bookmakerName(anchorUsed ?? ""),
+      sharpBookmaker: anchorUsed ?? "",
       markets,
     });
   }

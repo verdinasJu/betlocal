@@ -2,9 +2,9 @@ name: Ingesta de cuotas
 
 # El plan gratuito de Vercel solo ejecuta cron una vez al día, y para capturar
 # el movimiento de línea antes del pitido inicial hace falta más frecuencia.
-# El propio endpoint decide si merece la pena gastar cuota de la API, así que
-# disparar cada dos horas no consume 12 créditos diarios: solo gasta cuando hay
-# partidos cerca.
+# El endpoint decide liga por liga si merece la pena gastar cuota, así que
+# disparar cada dos horas sobre seis competiciones no consume 72 créditos
+# diarios: solo gasta en las ligas que tienen partido cerca.
 
 on:
   schedule:

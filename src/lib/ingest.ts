@@ -48,14 +48,16 @@ export const PROVIDER = "the_odds_api";
 /**
  * Casas que sirven de ancla de mercado eficiente, en orden de preferencia.
  *
- * El exchange va primero por lo que muestra el backtest: predice igual que
- * Pinnacle con un margen cinco veces menor, y Pinnacle dejó de publicar datos
- * fiables a mitad de 2025.
+ * Pinnacle va primero porque es lo que mide el backtest: con la misma
+ * estrategia, anclar en Pinnacle rinde +1,12% y anclar en el exchange −0,06%.
+ * En el histórico de Football-Data.co.uk Pinnacle desaparece a mitad de 2025 y
+ * ahí el exchange era el único sustituto, pero el feed en vivo sí lo trae, así
+ * que esa limitación era del CSV y no del proveedor.
  */
 export const SHARP_ANCHORS = [
+  "pinnacle",
   "betfair_ex_eu",
   "betfair_ex_uk",
-  "pinnacle",
   "smarkets",
   "matchbook",
 ] as const;

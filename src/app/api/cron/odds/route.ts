@@ -1,10 +1,11 @@
 /**
  * Ingesta de cuotas.
  *
- * Trae los partidos próximos con las cuotas de todas las casas disponibles y
- * guarda un snapshot de las que hayan cambiado. El histórico de snapshots es lo
- * que después permite calcular el CLV, que según el backtest es el único
- * indicador de ventaja que converge en un plazo razonable.
+ * Recorre las competiciones configuradas, trae los partidos próximos con las
+ * cuotas de todas las casas disponibles y guarda un snapshot de las que hayan
+ * cambiado. El histórico de snapshots es lo que después permite calcular el CLV,
+ * que según el backtest es el único indicador de ventaja que converge en un
+ * plazo razonable.
  *
  * Protegida por `CRON_SECRET`. La invoca un workflow de GitHub Actions (ver
  * `.github/workflows/ingest-odds.yml`) porque el plan gratuito de Vercel solo
@@ -15,12 +16,12 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAllRows } from "@/lib/supabase/paginate";
-import { fetchOdds, OddsApiError } from "@/lib/providers/the-odds-api";
+import { fetchOdds, OddsApiError, type Quota } from "@/lib/providers/the-odds-api";
+import { COMPETITIONS, type Competition } from "@/lib/competitions";
 import {
   normalizeEvent,
   onlyChanged,
   snapshotKey,
-  PROVIDER,
   type MatchInput,
   type SnapshotInput,
   type TeamInput,
@@ -38,15 +39,26 @@ type PreviousOdds = {
   odds: number;
 };
 
-const COMPETITION_ID = "ESP.1";
-const SPORT_KEY = process.env.ODDS_SPORT_KEY ?? "soccer_spain_la_liga";
-const REGIONS = process.env.ODDS_REGIONS ?? "eu,uk";
+/**
+ * Una sola región a propósito. El coste en cuota es mercados × regiones, y
+ * añadir `uk` la duplicaría para traer sobre todo casas británicas donde un
+ * usuario español no puede apostar. `eu` ya incluye las anclas que importan:
+ * Pinnacle y el exchange de Betfair.
+ */
+const REGIONS = process.env.ODDS_REGIONS ?? "eu";
 const MARKETS = process.env.ODDS_MARKETS ?? "h2h";
 
-/** Se llama al proveedor si algún partido arranca dentro de esta ventana. */
-const KICKOFF_WINDOW_HOURS = 14;
-/** Refresco mínimo diario, para descubrir jornadas nuevas. */
-const STALE_AFTER_HOURS = 20;
+/** Se llama al proveedor si algún partido de la liga arranca en esta ventana. */
+const KICKOFF_WINDOW_HOURS = 10;
+/** Refresco mínimo por liga, para descubrir jornadas nuevas. */
+const STALE_AFTER_HOURS = 40;
+/**
+ * Créditos que no se gastan nunca. Deja margen para depurar a mano a final de
+ * mes sin quedarse a ciegas.
+ */
+const QUOTA_RESERVE = 40;
+
+type SupabaseAdmin = ReturnType<typeof createAdminClient>;
 
 function unauthorized() {
   return NextResponse.json({ error: "No autorizado" }, { status: 401 });
@@ -58,128 +70,104 @@ function isAuthorized(request: Request): boolean {
   return request.headers.get("authorization") === `Bearer ${secret}`;
 }
 
-type SupabaseAdmin = ReturnType<typeof createAdminClient>;
-
 /**
- * Decide si merece la pena gastar cuota.
+ * Decide si merece la pena gastar cuota en una liga concreta.
  *
  * El plan gratuito son 500 peticiones al mes y cada llamada cuesta un crédito
- * por mercado y región, así que un cron que dispare a ciegas cada pocas horas se
- * queda sin cuota antes de fin de mes. LaLiga juega cuatro días por semana: el
- * resto del tiempo, volver a preguntar no aporta nada. Se concentra el gasto
- * donde la línea se mueve de verdad, que es en las horas previas al partido.
+ * por mercado y región, así que un cron que consulte seis ligas a ciegas cada
+ * dos horas se queda sin cuota en cuatro días. Cada liga juega dos o tres días
+ * por semana: el resto del tiempo, volver a preguntar no aporta nada. Se
+ * concentra el gasto donde la línea se mueve, que es en las horas previas al
+ * partido.
+ *
+ * `matches.updated_at` sirve de marca de última ingesta porque el upsert lo
+ * toca en cada pasada, así que no hace falta una tabla de estado aparte.
  */
 async function shouldFetch(
-  supabase: SupabaseAdmin
+  supabase: SupabaseAdmin,
+  competition: Competition
 ): Promise<{ fetch: boolean; reason: string }> {
   const now = Date.now();
 
   const { data: upcoming, error } = await supabase
     .from("matches")
     .select("kickoff_at")
+    .eq("competition_id", competition.id)
     .gte("kickoff_at", new Date(now).toISOString())
     .order("kickoff_at", { ascending: true })
     .limit(1);
 
   // Ante un error de lectura, se prefiere ingerir: perder cuota es menos grave
   // que quedarse sin datos.
-  if (error) return { fetch: true, reason: `no se pudo comprobar: ${error.message}` };
+  if (error) {
+    return { fetch: true, reason: `no se pudo comprobar: ${error.message}` };
+  }
 
   if (!upcoming?.length) {
-    return { fetch: true, reason: "no hay partidos futuros en la base" };
+    return { fetch: true, reason: "sin partidos futuros en la base" };
   }
 
   const hoursToKickoff =
     (new Date(upcoming[0].kickoff_at).getTime() - now) / 3_600_000;
 
   if (hoursToKickoff <= KICKOFF_WINDOW_HOURS) {
-    return {
-      fetch: true,
-      reason: `proximo partido en ${hoursToKickoff.toFixed(1)} h`,
-    };
+    return { fetch: true, reason: `partido en ${hoursToKickoff.toFixed(1)} h` };
   }
 
   const { data: last } = await supabase
-    .from("odds_snapshots")
-    .select("captured_at")
-    .order("captured_at", { ascending: false })
+    .from("matches")
+    .select("updated_at")
+    .eq("competition_id", competition.id)
+    .order("updated_at", { ascending: false })
     .limit(1);
 
   const hoursSinceLast = last?.length
-    ? (now - new Date(last[0].captured_at).getTime()) / 3_600_000
+    ? (now - new Date(last[0].updated_at).getTime()) / 3_600_000
     : Infinity;
 
   if (hoursSinceLast >= STALE_AFTER_HOURS) {
-    return { fetch: true, reason: "refresco diario de calendario" };
+    return { fetch: true, reason: "refresco de calendario" };
   }
 
   return {
     fetch: false,
-    reason: `proximo partido en ${hoursToKickoff.toFixed(1)} h y datos de hace ${hoursSinceLast.toFixed(1)} h`,
+    reason: `partido en ${hoursToKickoff.toFixed(1)} h, datos de hace ${hoursSinceLast.toFixed(1)} h`,
   };
 }
 
-export async function GET(request: Request) {
-  if (!isAuthorized(request)) return unauthorized();
+type IngestResult = {
+  competition: string;
+  events: number;
+  quotesSeen: number;
+  snapshotsInserted: number;
+  bookmakers: number;
+};
 
-  const apiKey = process.env.THE_ODDS_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json(
-      { error: "Falta THE_ODDS_API_KEY" },
-      { status: 503 }
-    );
-  }
-
-  const startedAt = Date.now();
-  const supabase = createAdminClient();
-  const force = new URL(request.url).searchParams.get("force") === "1";
-
-  const guard = force
-    ? { fetch: true, reason: "forzado" }
-    : await shouldFetch(supabase);
-
-  if (!guard.fetch) {
-    // Marcar cierres sí es gratis, así que se hace incluso al saltarse la API.
-    const { data: closingMarked } = await supabase.rpc("mark_closing_odds");
-    return NextResponse.json({
-      ok: true,
-      skipped: true,
-      reason: guard.reason,
-      closingMarked,
-    });
-  }
-
-  let events;
-  let quota;
-  try {
-    const response = await fetchOdds({
-      apiKey,
-      sportKey: SPORT_KEY,
-      regions: REGIONS,
-      markets: MARKETS,
-    });
-    events = response.events;
-    quota = response.quota;
-  } catch (error) {
-    const status = error instanceof OddsApiError ? error.status : 502;
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Error desconocido" },
-      { status: status === 401 || status === 422 ? status : 502 }
-    );
-  }
+async function ingestCompetition(
+  supabase: SupabaseAdmin,
+  apiKey: string,
+  competition: Competition
+): Promise<{ result: IngestResult; quota: Quota }> {
+  const { events, quota } = await fetchOdds({
+    apiKey,
+    sportKey: competition.sportKey,
+    regions: REGIONS,
+    markets: MARKETS,
+  });
 
   const normalized = events
-    .map((e) => normalizeEvent(e, COMPETITION_ID))
+    .map((e) => normalizeEvent(e, competition.id))
     .filter((e): e is NonNullable<typeof e> => e !== null);
 
-  if (!normalized.length) {
-    return NextResponse.json({
-      ok: true,
-      message: "El proveedor no devolvió partidos próximos",
-      events: 0,
-      quota,
-    });
-  }
+  const empty: IngestResult = {
+    competition: competition.id,
+    events: 0,
+    quotesSeen: 0,
+    snapshotsInserted: 0,
+    bookmakers: 0,
+  };
+
+  if (!normalized.length) return { result: empty, quota };
 
   // Los equipos van antes que los partidos: las claves ajenas lo exigen.
   const teams = new Map<string, TeamInput>();
@@ -203,12 +191,7 @@ export async function GET(request: Request) {
       { onConflict: "id" }
     )
   ).error;
-  if (teamsError) {
-    return NextResponse.json(
-      { error: `Equipos: ${teamsError.message}` },
-      { status: 500 }
-    );
-  }
+  if (teamsError) throw new Error(`Equipos: ${teamsError.message}`);
 
   /**
    * En los partidos no se toca `status` ni el resultado: eso lo actualiza la
@@ -229,41 +212,26 @@ export async function GET(request: Request) {
       { onConflict: "id" }
     )
   ).error;
-  if (matchesError) {
-    return NextResponse.json(
-      { error: `Partidos: ${matchesError.message}` },
-      { status: 500 }
-    );
-  }
+  if (matchesError) throw new Error(`Partidos: ${matchesError.message}`);
 
   // Última cuota conocida de cada cotización, para insertar solo los cambios.
-  // Se pagina: son ~117 filas por partido y PostgREST corta en 1000, así que sin
-  // paginar las cotizaciones que quedaran fuera parecerían nuevas y se
+  // Se pagina: son decenas de filas por partido y PostgREST corta en 1000, así
+  // que sin paginar las cotizaciones que quedaran fuera parecerían nuevas y se
   // reinsertarían en cada ejecución.
-  let previous: PreviousOdds[];
-  try {
-    previous = await fetchAllRows<PreviousOdds>((from, to) =>
-      supabase
-        .from("latest_odds")
-        .select("match_id, bookmaker, market, selection, line, odds")
-        .in(
-          "match_id",
-          matches.map((m) => m.id)
-        )
-        .order("match_id", { ascending: true })
-        .order("bookmaker", { ascending: true })
-        .order("market", { ascending: true })
-        .order("selection", { ascending: true })
-        .range(from, to)
-    );
-  } catch (error) {
-    return NextResponse.json(
-      {
-        error: `Cuotas previas: ${error instanceof Error ? error.message : "desconocido"}`,
-      },
-      { status: 500 }
-    );
-  }
+  const previous = await fetchAllRows<PreviousOdds>((from, to) =>
+    supabase
+      .from("latest_odds")
+      .select("match_id, bookmaker, market, selection, line, odds")
+      .in(
+        "match_id",
+        matches.map((m) => m.id)
+      )
+      .order("match_id", { ascending: true })
+      .order("bookmaker", { ascending: true })
+      .order("market", { ascending: true })
+      .order("selection", { ascending: true })
+      .range(from, to)
+  );
 
   const latestOdds = new Map<string, number>(
     previous.map((row) => [
@@ -293,11 +261,84 @@ export async function GET(request: Request) {
         }))
       )
     ).error;
-    if (insertError) {
-      return NextResponse.json(
-        { error: `Snapshots: ${insertError.message}` },
-        { status: 500 }
-      );
+    if (insertError) throw new Error(`Snapshots: ${insertError.message}`);
+  }
+
+  return {
+    result: {
+      competition: competition.id,
+      events: normalized.length,
+      quotesSeen: snapshots.length,
+      snapshotsInserted: changed.length,
+      bookmakers: new Set(snapshots.map((s) => s.bookmaker)).size,
+    },
+    quota,
+  };
+}
+
+export async function GET(request: Request) {
+  if (!isAuthorized(request)) return unauthorized();
+
+  const apiKey = process.env.THE_ODDS_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json({ error: "Falta THE_ODDS_API_KEY" }, { status: 503 });
+  }
+
+  const startedAt = Date.now();
+  const supabase = createAdminClient();
+  const params = new URL(request.url).searchParams;
+  const force = params.get("force") === "1";
+  const only = params.get("competition");
+
+  const targets = only
+    ? COMPETITIONS.filter((c) => c.id === only)
+    : COMPETITIONS;
+
+  if (!targets.length) {
+    return NextResponse.json(
+      { error: `Competición desconocida: ${only}` },
+      { status: 400 }
+    );
+  }
+
+  const results: IngestResult[] = [];
+  const skipped: { competition: string; reason: string }[] = [];
+  const failed: { competition: string; error: string }[] = [];
+  let quota: Quota | null = null;
+  let exhausted = false;
+
+  for (const competition of targets) {
+    if (exhausted) {
+      skipped.push({ competition: competition.id, reason: "cuota agotada" });
+      continue;
+    }
+
+    const guard = force
+      ? { fetch: true, reason: "forzado" }
+      : await shouldFetch(supabase, competition);
+
+    if (!guard.fetch) {
+      skipped.push({ competition: competition.id, reason: guard.reason });
+      continue;
+    }
+
+    try {
+      const outcome = await ingestCompetition(supabase, apiKey, competition);
+      results.push(outcome.result);
+      quota = outcome.quota;
+    } catch (error) {
+      // Una liga caída no debe impedir ingerir las demás.
+      const message =
+        error instanceof Error ? error.message : "Error desconocido";
+      failed.push({ competition: competition.id, error: message });
+      if (error instanceof OddsApiError && error.status === 401) {
+        exhausted = true;
+      }
+      continue;
+    }
+
+    if (quota.remaining !== null && quota.remaining <= QUOTA_RESERVE) {
+      exhausted = true;
     }
   }
 
@@ -308,14 +349,16 @@ export async function GET(request: Request) {
   );
 
   return NextResponse.json({
-    ok: true,
-    reason: guard.reason,
+    ok: failed.length === 0,
     durationMs: Date.now() - startedAt,
-    events: normalized.length,
-    teams: teams.size,
-    bookmakers: new Set(snapshots.map((s) => s.bookmaker)).size,
-    quotesSeen: snapshots.length,
-    snapshotsInserted: changed.length,
+    fetched: results,
+    skipped,
+    failed,
+    totals: {
+      events: results.reduce((a, r) => a + r.events, 0),
+      quotesSeen: results.reduce((a, r) => a + r.quotesSeen, 0),
+      snapshotsInserted: results.reduce((a, r) => a + r.snapshotsInserted, 0),
+    },
     closingMarked: closingError ? `error: ${closingError.message}` : closingMarked,
     quota,
   });

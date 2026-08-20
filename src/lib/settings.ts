@@ -19,18 +19,26 @@ export type RiskSettings = {
 };
 
 /**
- * Los filtros de cuota no son arbitrarios: salen del backtest sobre 14
- * temporadas y seis ligas (ver `docs/BACKTEST.md`). Por encima de cuota 3.5 el
- * ROI se vuelve negativo de forma consistente, incluso cuando el EV calculado
- * es alto — es el sesgo favorito/longshot: en cuotas largas las casas cargan el
- * margen y un error pequeño de probabilidad se traga la ventaja entera.
+ * Los filtros no son arbitrarios: salen del backtest sobre 14 temporadas y seis
+ * ligas (ver `docs/BACKTEST.md`).
+ *
+ * Por encima de cuota 3.5 el ROI se vuelve negativo de forma consistente,
+ * incluso cuando el EV calculado es alto — es el sesgo favorito/longshot: en
+ * cuotas largas las casas cargan el margen y un error pequeño de probabilidad
+ * se traga la ventaja entera.
+ *
+ * El umbral de EV es del 1% y no del 2% por una razón de volumen. Apostando en
+ * una sola casa las oportunidades son escasísimas, y en el escenario medido
+ * (Bet365, cuota de cierre) bajar de 2% a 1% dobló el número de apuestas sin
+ * empeorar el ROI. Con tan pocas apuestas, quedarse sin muestra es un riesgo
+ * mayor que colar alguna apuesta de valor ajustado.
  */
 export const DEFAULT_SETTINGS: RiskSettings = {
   bankroll: 0,
   currency: "EUR",
   kellyFraction: 0.25,
   maxStakePct: 2,
-  minEvPct: 2,
+  minEvPct: 1,
   minOdds: 1.2,
   maxOdds: 3.5,
 };
