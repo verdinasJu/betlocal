@@ -1,5 +1,5 @@
 {
-  "name": "betlocal",
+  "name": "estudia",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -7,10 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "icons": "node scripts/generate-icons.mjs",
-    "backtest:data": "node scripts/backtest/download.mjs",
-    "backtest": "tsx scripts/backtest/run.ts",
-    "inspect": "tsx scripts/inspect-recommendations.ts"
+    "icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.14",

@@ -3,20 +3,20 @@ import { Toaster } from "sonner";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "BetLocal",
+  title: "Estudia",
   description:
-    "Cuotas justas, valor esperado y edge por mercado en LaLiga. Análisis estadístico, no consejos de apuestas.",
-  applicationName: "BetLocal",
+    "Estudia certificaciones y asignaturas en el móvil: tests, juegos y repetición espaciada.",
+  applicationName: "Estudia",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "BetLocal",
+    title: "Estudia",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#05080c",
+  themeColor: "#0b1020",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,

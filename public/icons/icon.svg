@@ -1,34 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="112" fill="#0b1020"/>
   <defs>
-    <radialGradient id="glowGreen" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0%" stop-color="#10B981" stop-opacity="0.55"/>
-      <stop offset="55%" stop-color="#10B981" stop-opacity="0.14"/>
-      <stop offset="100%" stop-color="#10B981" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="glowBlue" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.28"/>
-      <stop offset="100%" stop-color="#38BDF8" stop-opacity="0"/>
-    </radialGradient>
-    <clipPath id="squircle">
-      <rect width="512" height="512" rx="112"/>
-    </clipPath>
+    <linearGradient id="g" x1="80" y1="80" x2="420" y2="440" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#34d399"/>
+    </linearGradient>
   </defs>
-
-  <g clip-path="url(#squircle)">
-    <rect width="512" height="512" fill="#080D14"/>
-    <circle cx="140" cy="110" r="240" fill="url(#glowGreen)"/>
-    <circle cx="430" cy="450" r="200" fill="url(#glowBlue)"/>
-
-    <!-- Barras: el mercado -->
-    <rect x="112" y="300" width="42" height="96" rx="14" fill="#243244" opacity="0.9"/>
-    <rect x="180" y="258" width="42" height="138" rx="14" fill="#243244" opacity="0.9"/>
-    <rect x="248" y="286" width="42" height="110" rx="14" fill="#243244" opacity="0.9"/>
-    <rect x="316" y="214" width="42" height="182" rx="14" fill="#10B981"/>
-
-    <!-- Linea de cuota justa -->
-    <path d="M104 268 L201 214 L269 240 L337 158" stroke="#ECFDF5" stroke-width="18"
-          stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-    <circle cx="337" cy="158" r="26" fill="#22C55E"/>
-    <circle cx="337" cy="158" r="10" fill="#04120C"/>
-  </g>
+  <path d="M128 150c0-12 10-22 22-22h140c48 0 86 38 86 86s-38 86-86 86H196v84c0 12-10 22-22 22h-24c-12 0-22-10-22-22V150z" fill="url(#g)"/>
+  <path d="M196 214h88c14 0 26 12 26 26s-12 26-26 26h-88v-52z" fill="#0b1020" opacity="0.35"/>
+  <circle cx="372" cy="352" r="48" fill="#fbbf24"/>
+  <path d="M372 328v32M356 344h32" stroke="#0b1020" stroke-width="10" stroke-linecap="round"/>
 </svg>

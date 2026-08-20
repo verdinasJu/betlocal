@@ -13,11 +13,11 @@ export default function LoginPage() {
       <div className="relative animate-rise space-y-8">
         <header className="space-y-3 text-center">
           <p className="text-4xl font-semibold tracking-tight text-ink sm:text-5xl">
-            Bet<span className="text-brand">Local</span>
+            Estudia
           </p>
           <p className="text-sm text-ink-muted leading-relaxed">
-            La cuenta sirve para guardar tus apuestas y llevar tu banco entre
-            dispositivos. Para consultar las recomendaciones no hace falta.
+            La cuenta es opcional. El progreso de estudio ya se guarda en este
+            dispositivo; con cuenta podrás sincronizarlo más adelante.
           </p>
         </header>
 
@@ -33,13 +33,13 @@ export default function LoginPage() {
           href="/"
           className="block text-center text-sm font-medium text-ink-muted transition-colors hover:text-ink"
         >
-          Ver recomendaciones sin cuenta
+          Empezar a estudiar sin cuenta
         </Link>
 
         <p className="text-center text-xs text-ink-faint leading-relaxed">
-          BetLocal es una herramienta de análisis estadístico. No es una casa de
-          apuestas, no acepta apuestas y no garantiza resultados. +18. Juega con
-          responsabilidad.
+          Estudia es una herramienta de práctica. El contenido de Salesforce es
+          material de estudio original con enlaces a fuentes públicas, no dumps
+          de examen.
         </p>
       </div>
     </main>

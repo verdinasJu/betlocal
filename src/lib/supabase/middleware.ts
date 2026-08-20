@@ -2,7 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 /** Rutas cuyo contenido vive en la base de datos y por tanto necesitan cuenta. */
-const PROTECTED_PREFIXES = ["/apuestas", "/rendimiento"];
+const PROTECTED_PREFIXES: string[] = [];
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });

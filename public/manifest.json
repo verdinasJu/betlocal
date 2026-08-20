@@ -1,11 +1,11 @@
 {
-  "name": "BetLocal",
-  "short_name": "BetLocal",
-  "description": "Cuotas justas, valor esperado y edge por mercado en LaLiga.",
+  "name": "Estudia",
+  "short_name": "Estudia",
+  "description": "Tests, juegos y repetición espaciada para certificaciones y asignaturas.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#05080c",
-  "theme_color": "#05080c",
+  "background_color": "#0b1020",
+  "theme_color": "#0b1020",
   "orientation": "portrait-primary",
   "lang": "es",
   "icons": [

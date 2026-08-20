@@ -33,8 +33,7 @@ export function AccountCard() {
           <p className="text-sm font-semibold text-ink">Sin cuenta</p>
           <p className="text-sm text-ink-muted leading-relaxed">
             Tus ajustes se guardan solo en este dispositivo. Con cuenta se
-            sincronizan entre móvil y ordenador, y puedes registrar tus apuestas
-            para medir el CLV.
+            podrán sincronizar entre móvil y ordenador.
           </p>
           <Button asChild className="w-full">
             <Link href="/login">

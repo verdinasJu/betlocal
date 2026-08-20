@@ -1,32 +1,32 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --font-sans: "Inter";
+  --font-sans: "DM Sans";
   --font-mono: "JetBrains Mono";
 
-  --ink: #e8eef6;
-  --ink-muted: #93a4b8;
-  --ink-faint: #5c6f85;
+  --ink: #e8eef8;
+  --ink-muted: #94a3b8;
+  --ink-faint: #64748b;
 
-  --surface: #0e1520;
-  --surface-2: #141d2b;
-  --surface-3: #1c2838;
-  --line: #223044;
+  --surface: #121826;
+  --surface-2: #1a2234;
+  --surface-3: #243044;
+  --line: #2a3548;
 
-  --brand: #10b981;
-  --brand-dark: #059669;
+  --brand: #38bdf8;
+  --brand-dark: #0ea5e9;
 
-  --value: #22c55e;
-  --value-muted: #16a34a;
-  --negative: #f43f5e;
+  --value: #34d399;
+  --value-muted: #10b981;
+  --negative: #fb7185;
 
-  --canvas-from: #05080c;
-  --canvas-via: #070b12;
-  --canvas-to: #060a10;
+  --canvas-from: #0b1020;
+  --canvas-via: #0d1424;
+  --canvas-to: #0a0f1c;
 
   --background: var(--canvas-from);
   --foreground: var(--ink);
@@ -46,8 +46,8 @@
     @apply min-h-dvh text-ink;
     font-family: var(--font-sans), system-ui, sans-serif;
     background:
-      radial-gradient(1100px 560px at 8% -8%, rgba(16, 185, 129, 0.12), transparent 55%),
-      radial-gradient(900px 480px at 100% 0%, rgba(56, 189, 248, 0.08), transparent 52%),
+      radial-gradient(1000px 520px at 10% -10%, rgba(56, 189, 248, 0.14), transparent 55%),
+      radial-gradient(800px 420px at 100% 0%, rgba(52, 211, 153, 0.1), transparent 50%),
       linear-gradient(170deg, var(--canvas-from), var(--canvas-via) 45%, var(--canvas-to));
     background-attachment: fixed;
   }

@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LineChart, ListChecks, Settings, Trophy } from "lucide-react";
+import { BookOpen, Flame, Gamepad2, Library, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const ITEMS = [
-  { href: "/", label: "Partidos", icon: Trophy },
-  { href: "/apuestas", label: "Apuestas", icon: ListChecks },
-  { href: "/rendimiento", label: "Rendimiento", icon: LineChart },
+const NAV = [
+  { href: "/", label: "Hoy", icon: Flame },
+  { href: "/cursos", label: "Cursos", icon: Library },
+  { href: "/jugar", label: "Jugar", icon: Gamepad2 },
+  { href: "/progreso", label: "Progreso", icon: BookOpen },
   { href: "/ajustes", label: "Ajustes", icon: Settings },
 ];
 
@@ -18,7 +19,7 @@ export function BottomNav() {
   return (
     <nav className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-line/80 bg-surface/90 backdrop-blur">
       <div className="mx-auto flex w-full max-w-lg items-stretch sm:max-w-3xl lg:max-w-5xl">
-        {ITEMS.map(({ href, label, icon: Icon }) => {
+        {NAV.map(({ href, label, icon: Icon }) => {
           const active =
             href === "/" ? pathname === "/" : pathname.startsWith(href);
           return (
