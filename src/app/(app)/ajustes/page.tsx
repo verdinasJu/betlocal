@@ -6,12 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AccountCard } from "@/components/AccountCard";
 import { useProgress } from "@/hooks/useProgress";
+import { useLessons } from "@/hooks/useLessons";
 import { useStudySettings } from "@/hooks/useStudySettings";
 import { hasSupabase } from "@/lib/settings";
 
 export default function AjustesPage() {
   const { settings, update } = useStudySettings();
   const { reset } = useProgress();
+  const { reset: resetLessons } = useLessons();
 
   return (
     <main className="animate-rise space-y-6">
@@ -53,7 +55,10 @@ export default function AjustesPage() {
           <Button
             variant="danger"
             onClick={() => {
-              if (confirm("¿Borrar todo el progreso de estudio?")) reset();
+              if (confirm("¿Borrar progreso de preguntas y lecciones?")) {
+                reset();
+                resetLessons();
+              }
             }}
           >
             Reiniciar progreso

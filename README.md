@@ -5,13 +5,12 @@ y repetición espaciada**. Stack: Next.js + Supabase + Vercel.
 
 ## Cómo se usa
 
-1. Abre la app en el móvil y añade acceso directo (PWA).
-2. En **Hoy**, cumple la meta diaria de fichas.
-3. En **Jugar**, elige un modo (Racha, Contrarreloj, Parejas…).
-4. En **Progreso**, mira qué temas fallas y abre **Revancha**.
+1. **Aprender**: lee las lecciones del día (conceptos en español sencillo).
+2. **Practicar / Jugar**: test, racha, trampas, parejas…
+3. **Progreso / Revancha**: cierra agujeros antes del examen.
 
-Curso inicial: **Salesforce Administrator** (español), práctica original con
-enlaces a Trailhead. No son dumps del examen.
+No usamos dumps de sitios tipo FreeCram (van contra las reglas de Salesforce).
+Las preguntas son **práctica original** sobre los mismos temas del exam guide.
 
 ## Stack
 

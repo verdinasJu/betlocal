@@ -1,27 +1,33 @@
 /**
  * Tipos del dominio de estudio.
  *
- * Curso → temas → fichas. Los modos de juego solo eligen un subconjunto de
- * fichas y una regla de sesión; no inventan contenido.
+ * Flujo pensado para certificar en pocos días:
+ *   1) Leer lecciones del tema (conceptos)
+ *   2) Jugar / testear ese tema
+ *   3) Repasar fallos (SRS + Revancha)
  */
 
 export type CardKind = "mcq" | "tf" | "pair";
+
+export type Lesson = {
+  id: string;
+  title: string;
+  /** Texto sencillo en español, párrafos separados por \n\n */
+  body: string;
+  sourceUrl?: string;
+  sourceLabel?: string;
+};
 
 export type StudyCard = {
   id: string;
   topicId: string;
   kind: CardKind;
-  /** Enunciado o afirmación. */
   prompt: string;
-  /** Opciones para mcq (exactamente una correcta). */
   options?: string[];
   answerIndex?: number;
-  /** Para verdadero/falso. */
   answerTrue?: boolean;
-  /** Para emparejar. */
   term?: string;
   definition?: string;
-  /** Feedback tras responder. */
   explanation: string;
   sourceUrl?: string;
   sourceLabel?: string;
@@ -34,6 +40,9 @@ export type Topic = {
   title: string;
   summary: string;
   order: number;
+  /** Día sugerido del plan de 10 días (1–10). */
+  day?: number;
+  lessons: Lesson[];
 };
 
 export type Course = {
@@ -61,9 +70,7 @@ export type GameMode = {
   id: GameModeId;
   title: string;
   blurb: string;
-  /** Segundos; null = sin reloj global. */
   seconds: number | null;
   lives: number | null;
-  /** Cuántas fichas pide la partida (pairs usa pares). */
   targetCards: number;
 };

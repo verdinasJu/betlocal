@@ -58,11 +58,18 @@ export function pickCards(
     }
     case "quiz":
     case "streak":
-    case "blitz":
-    default: {
+    case "blitz": {
+      if (topicId) {
+        chosenIds = shuffle(ids);
+        break;
+      }
       const due = dueCardIds(ids, map);
       const rest = ids.filter((id) => !due.includes(id));
       chosenIds = [...shuffle(due), ...shuffle(rest)];
+      break;
+    }
+    default: {
+      chosenIds = shuffle(ids);
       break;
     }
   }

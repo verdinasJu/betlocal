@@ -59,12 +59,20 @@ export default function CursoDetallePage() {
                     {cards.length} fichas
                     {st ? ` · ${st.due} pendientes` : ""}
                   </p>
-                  <Link
-                    href={`/jugar/boss?topic=${topic.id}`}
-                    className="inline-block text-sm text-brand"
-                  >
-                    Jefe de tema →
-                  </Link>
+                  <div className="flex flex-wrap gap-3 pt-1">
+                    <Link
+                      href={`/aprender/${topic.id}`}
+                      className="text-sm text-brand"
+                    >
+                      Aprender conceptos →
+                    </Link>
+                    <Link
+                      href={`/jugar/quiz?topic=${topic.id}`}
+                      className="text-sm text-ink-muted"
+                    >
+                      Practicar
+                    </Link>
+                  </div>
                 </CardContent>
               </Card>
             );

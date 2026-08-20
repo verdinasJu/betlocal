@@ -51,9 +51,17 @@ el progreso real es el **SRS** y el % por tema.
 
 ## Flujo diario recomendado
 
-1. Abrir **Hoy** → hacer las fichas “debido”.
-2. Si aún tienes ganas, un modo juego (Contrarreloj o Racha).
-3. Antes del examen: **Revancha** + **Jefe** de los temas flojos.
+1. Abrir **Aprender** → lecciones del día (conceptos).
+2. **Practicar ese tema** (quiz / verdaderos).
+3. Si quedan fallos: **Revancha**.
+4. Antes del examen: **Jefe** de temas flojos.
+
+## FreeCram y dumps
+
+No se importan bancos de preguntas de FreeCram u otros dumps. Son material
+protegido y violan el acuerdo de certificación. En su lugar cubrimos los mismos
+*temas* (p. ej. personalizar la página de Case por rol → layouts / Lightning
+Record Pages) con lecciones claras y preguntas propias.
 
 ## Cómo se añade materia nueva
 

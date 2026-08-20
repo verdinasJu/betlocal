@@ -2,12 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Flame, Gamepad2, Library, Settings } from "lucide-react";
+import {
+  BookOpen,
+  Flame,
+  Gamepad2,
+  GraduationCap,
+  Settings,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/", label: "Hoy", icon: Flame },
-  { href: "/cursos", label: "Cursos", icon: Library },
+  { href: "/aprender", label: "Aprender", icon: GraduationCap },
   { href: "/jugar", label: "Jugar", icon: Gamepad2 },
   { href: "/progreso", label: "Progreso", icon: BookOpen },
   { href: "/ajustes", label: "Ajustes", icon: Settings },
@@ -21,7 +27,9 @@ export function BottomNav() {
       <div className="mx-auto flex w-full max-w-lg items-stretch sm:max-w-3xl lg:max-w-5xl">
         {NAV.map(({ href, label, icon: Icon }) => {
           const active =
-            href === "/" ? pathname === "/" : pathname.startsWith(href);
+            href === "/"
+              ? pathname === "/"
+              : pathname === href || pathname.startsWith(`${href}/`);
           return (
             <Link
               key={href}
