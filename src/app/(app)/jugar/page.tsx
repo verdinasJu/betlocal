@@ -10,9 +10,23 @@ export default function JugarPage() {
       <header className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight">Jugar</h1>
         <p className="text-sm text-ink-muted">
-          Elige un modo. Todos actualizan el mismo progreso (SRS).
+          Elige un modo. El examen de prueba simula el formato real.
         </p>
       </header>
+
+      <Link href="/examen" className="block">
+        <Card className="border-brand/40 transition hover:border-brand">
+          <CardContent className="flex items-center justify-between gap-3 p-4">
+            <div className="space-y-1">
+              <p className="font-semibold text-ink">Examen de prueba</p>
+              <p className="text-xs text-ink-muted">
+                60 preguntas · 105 min · aprobado al 68%
+              </p>
+            </div>
+            <span className="text-brand text-sm">→</span>
+          </CardContent>
+        </Card>
+      </Link>
 
       <div className="space-y-3">
         {GAME_MODES.map((mode) => (

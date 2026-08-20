@@ -122,6 +122,9 @@ export default function HoyPage() {
         <Button asChild variant="secondary" className="w-full">
           <Link href="/jugar/quiz">Repaso SRS</Link>
         </Button>
+        <Button asChild variant="secondary" className="w-full">
+          <Link href="/examen">Examen de prueba (60)</Link>
+        </Button>
         <Button asChild variant="ghost" className="w-full">
           <Link href="/jugar/revenge">Revancha (fallos)</Link>
         </Button>

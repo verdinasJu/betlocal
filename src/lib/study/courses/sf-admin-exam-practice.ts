@@ -634,4 +634,409 @@ export const SF_ADMIN_EXAM_STYLE: StudyCard[] = [
       "Otra variante del mismo skill de examen: personalizar la experiencia por audiencia.",
     difficulty: 2,
   },
+
+  // —— Ampliación para poder montar varios simulacros de 60 ——
+  {
+    id: "ex-41",
+    topicId: "sf-setup",
+    kind: "mcq",
+    prompt:
+      "Cloud Kicks cambia de moneda corporativa por defecto. ¿Dónde se configura normalmente?",
+    options: [
+      "Solo en un Report",
+      "Company Information / settings de compañía",
+      "Duplicate Rules",
+      "Path Settings",
+    ],
+    answerIndex: 1,
+    explanation: "Locale, moneda y datos de compañía viven en Setup de la org.",
+    difficulty: 1,
+  },
+  {
+    id: "ex-42",
+    topicId: "sf-users",
+    kind: "mcq",
+    prompt:
+      "Un usuario no puede ver una app Lightning que sí ven sus compañeros con el mismo rol. ¿Qué miras?",
+    options: [
+      "Solo el OWD de Account",
+      "Asignación de la app al perfil (o permission set de app)",
+      "Fiscal year",
+      "Bucket fields",
+    ],
+    answerIndex: 1,
+    explanation:
+      "La visibilidad de apps se controla por perfil / permission set, no por rol.",
+    difficulty: 2,
+  },
+  {
+    id: "ex-43",
+    topicId: "sf-security",
+    kind: "mcq",
+    prompt:
+      "Quieres que un public group vea ciertas Opportunities privadas. OWD = Private. ¿Mecanismo típico?",
+    options: [
+      "Validation rule",
+      "Sharing rule basada en criteria o owner",
+      "Compact Layout",
+      "Freeze del owner",
+    ],
+    answerIndex: 1,
+    explanation: "Sharing rules abren acceso por encima del OWD.",
+    difficulty: 2,
+  },
+  {
+    id: "ex-44",
+    topicId: "sf-security",
+    kind: "mcq",
+    prompt:
+      "Un permission set puede…",
+    options: [
+      "Quitar permisos del perfil",
+      "Añadir permisos encima del perfil",
+      "Cambiar el OWD global",
+      "Borrar usuarios",
+    ],
+    answerIndex: 1,
+    explanation: "Los permission sets suman; no restan del perfil.",
+    difficulty: 1,
+  },
+  {
+    id: "ex-45",
+    topicId: "sf-objects",
+    kind: "mcq",
+    prompt:
+      "Necesitas un campo que calcule Amount * 1.21 en la misma Opportunity. ¿Qué creas?",
+    options: [
+      "Roll-up summary",
+      "Formula field",
+      "Queue",
+      "Assignment rule",
+    ],
+    answerIndex: 1,
+    explanation: "Formula = cálculo en el propio registro.",
+    difficulty: 1,
+  },
+  {
+    id: "ex-46",
+    topicId: "sf-objects",
+    kind: "mcq",
+    prompt:
+      "Un lookup de Contact a Account permite Contact sin Account. ¿Es coherente con Lookup?",
+    options: [
+      "No: Lookup siempre obliga",
+      "Sí: Lookup puede ser opcional",
+      "Solo con Master-Detail",
+      "Solo con External ID",
+    ],
+    answerIndex: 1,
+    explanation: "Lookup es flexible; Master-Detail es más estricto.",
+    difficulty: 2,
+  },
+  {
+    id: "ex-47",
+    topicId: "sf-ui",
+    kind: "mcq",
+    prompt:
+      "Ursa Major quiere botones distintos en Case según el perfil. ¿Dónde se controlan muchos botones estándar/custom de la página?",
+    options: [
+      "OWD",
+      "Page Layout (y acciones en Lightning)",
+      "Solo Data Loader",
+      "Solo Matching Rules",
+    ],
+    answerIndex: 1,
+    explanation: "Layouts y acciones Lightning definen la UI de botones.",
+    difficulty: 2,
+  },
+  {
+    id: "ex-48",
+    topicId: "sf-ui",
+    kind: "mcq",
+    prompt:
+      "La Home Page de Lightning debe mostrar un dashboard distinto para managers. ¿Enfoque?",
+    options: [
+      "Freeze a no-managers",
+      "Lightning pages / asignaciones por perfil o app",
+      "Solo tabular report",
+      "Borrar App Manager",
+    ],
+    answerIndex: 1,
+    explanation: "Home también se personaliza con App Builder y activaciones.",
+    difficulty: 2,
+  },
+  {
+    id: "ex-49",
+    topicId: "sf-service",
+    kind: "mcq",
+    prompt:
+      "Un Case puede tener varios contactos relacionados además del Contact principal. Concepto típico:",
+    options: [
+      "Case Contact Roles / related contacts",
+      "Fiscal Year",
+      "Login History",
+      "Bucket",
+    ],
+    answerIndex: 0,
+    explanation:
+      "Service Cloud permite roles/contactos adicionales en el Case según edición/features.",
+    difficulty: 3,
+  },
+  {
+    id: "ex-50",
+    topicId: "sf-service",
+    kind: "mcq",
+    prompt:
+      "Los Cases de la cola Support_EMEA deben poder ser “reclamados” por el equipo EMEA. ¿Qué implica?",
+    options: [
+      "Solo FLS",
+      "Miembros de la queue (usuarios/roles/grupos) con acceso a esa bandeja",
+      "OWD Public Read/Write obligatorio siempre",
+      "Desactivar assignment rules",
+    ],
+    answerIndex: 1,
+    explanation: "Las queues tienen miembros que trabajan esos registros.",
+    difficulty: 2,
+  },
+  {
+    id: "ex-51",
+    topicId: "sf-sales",
+    kind: "mcq",
+    prompt:
+      "Al convertir un Lead, Salesforce avisa de posible duplicado de Account. ¿Qué ayuda a detectar duplicados?",
+    options: [
+      "Path",
+      "Matching / Duplicate rules",
+      "Compact Layout",
+      "Freeze",
+    ],
+    answerIndex: 1,
+    explanation: "Duplicate management en la creación/conversión.",
+    difficulty: 2,
+  },
+  {
+    id: "ex-52",
+    topicId: "sf-sales",
+    kind: "mcq",
+    prompt:
+      "Quieres que Closed Lost exija un motivo en un campo. Mejor herramienta:",
+    options: [
+      "Sharing rule",
+      "Validation rule (o regla de stage + campo)",
+      "Queue",
+      "Tabular report",
+    ],
+    answerIndex: 1,
+    explanation: "Validación al guardar según Stage.",
+    difficulty: 2,
+  },
+  {
+    id: "ex-53",
+    topicId: "sf-auto",
+    kind: "mcq",
+    prompt:
+      "Cada noche hay que actualizar un campo en Opportunities abiertas antiguas. ¿Tipo de automatización?",
+    options: [
+      "Solo Screen Flow manual",
+      "Schedule-Triggered Flow (o proceso programado equivalente)",
+      "Solo Page Layout",
+      "Solo Chatter post",
+    ],
+    answerIndex: 1,
+    explanation: "Automatización programada / scheduled flow.",
+    difficulty: 2,
+  },
+  {
+    id: "ex-54",
+    topicId: "sf-auto",
+    kind: "mcq",
+    prompt:
+      "Un Flow after-save crea Tasks pero a veces falla por límites. ¿Mentalidad correcta?",
+    options: [
+      "Ignorar bulk",
+      "Diseñar pensando en muchos registros y límites de gobernanza",
+      "Poner OWD a Private lo arregla",
+      "Usar solo Freeze",
+    ],
+    answerIndex: 1,
+    explanation: "El examen espera conciencia de bulk/governor limits a nivel admin.",
+    difficulty: 3,
+  },
+  {
+    id: "ex-55",
+    topicId: "sf-reports",
+    kind: "mcq",
+    prompt:
+      "Un report Summary agrupa Opportunities por Stage. ¿Para qué sirve un chart en el report?",
+    options: [
+      "Cambiar OWD",
+      "Visualizar el resumen en el propio informe",
+      "Crear usuarios",
+      "Aprobar descuentos",
+    ],
+    answerIndex: 1,
+    explanation: "Los charts resumen el report; el dashboard reutiliza reports.",
+    difficulty: 1,
+  },
+  {
+    id: "ex-56",
+    topicId: "sf-reports",
+    kind: "mcq",
+    prompt:
+      "Los usuarios no ven un dashboard porque la carpeta está restringida. ¿Qué revisas?",
+    options: [
+      "Solo FLS de Amount",
+      "Acceso a la carpeta del dashboard / report",
+      "Fiscal year",
+      "Login IP del admin",
+    ],
+    answerIndex: 1,
+    explanation: "Folders controlan quién ve reports/dashboards.",
+    difficulty: 2,
+  },
+  {
+    id: "ex-57",
+    topicId: "sf-collab",
+    kind: "mcq",
+    prompt:
+      "Quieres que un equipo colabore en privado sin toda la org. ¿Opción típica?",
+    options: [
+      "Public Group + Chatter Group privado / colaboración restringida",
+      "OWD Public Read/Write en todo",
+      "Borrar perfiles",
+      "Solo Data Loader",
+    ],
+    answerIndex: 0,
+    explanation: "Grupos privados / colaboración acotada.",
+    difficulty: 2,
+  },
+  {
+    id: "ex-58",
+    topicId: "sf-collab",
+    kind: "mcq",
+    prompt:
+      "Antes de activar un agente de IA que lea Cases, el admin debería preocuparse sobre todo de…",
+    options: [
+      "El color del tema",
+      "Qué datos y permisos puede usar el agente",
+      "El nombre del fiscal year",
+      "Si Path está en verde",
+    ],
+    answerIndex: 1,
+    explanation: "Gobernanza y datos > cosmética.",
+    difficulty: 2,
+  },
+  {
+    id: "ex-59",
+    topicId: "sf-ui",
+    kind: "mcq",
+    prompt:
+      "Dos record types de Case usan layouts distintos. Un usuario no ve el record type en el picklist. ¿Causa típica?",
+    options: [
+      "No está disponible el record type para su perfil",
+      "OWD Private siempre lo oculta",
+      "Falta un bucket",
+      "Freeze automático",
+    ],
+    answerIndex: 0,
+    explanation: "Record types se asignan por perfil.",
+    difficulty: 2,
+  },
+  {
+    id: "ex-60",
+    topicId: "sf-setup",
+    kind: "mcq",
+    prompt:
+      "Password policies (longitud, expiración) se configuran sobre todo a nivel de…",
+    options: [
+      "Report type",
+      "Profile (y settings relacionados de la org)",
+      "Dashboard filter",
+      "Campaign member status",
+    ],
+    answerIndex: 1,
+    explanation: "Políticas de login suelen vivir en el perfil / seguridad de org.",
+    difficulty: 2,
+  },
+  {
+    id: "ex-61",
+    topicId: "sf-security",
+    kind: "mcq",
+    prompt:
+      "Un usuario tiene Modify All en Case. ¿Qué implica a grandes rasgos?",
+    options: [
+      "Solo ve sus Cases",
+      "Puede ver/editar Cases más allá del sharing normal (poder elevado)",
+      "No puede editar nada",
+      "Solo cambia el logo",
+    ],
+    answerIndex: 1,
+    explanation: "View/Modify All son permisos potentes que saltan mucho sharing.",
+    difficulty: 3,
+  },
+  {
+    id: "ex-62",
+    topicId: "sf-objects",
+    kind: "mcq",
+    prompt:
+      "Quieres que un campo sea obligatorio solo en UI, no a nivel de base. ¿Dónde lo marcas a menudo?",
+    options: [
+      "OWD",
+      "Page Layout (required) — con matices vs required a nivel campo",
+      "Queue",
+      "Path color",
+    ],
+    answerIndex: 1,
+    explanation:
+      "Required en layout es UX; required a nivel campo es más estricto (API incluida).",
+    difficulty: 3,
+  },
+  {
+    id: "ex-63",
+    topicId: "sf-auto",
+    kind: "mcq",
+    prompt:
+      "Un Approval Process puede…",
+    options: [
+      "Solo enviar un report",
+      "Bloquear edición de campos mientras está pendiente (según config)",
+      "Cambiar el OWD",
+      "Crear licencias",
+    ],
+    answerIndex: 1,
+    explanation: "Locking de registros/campos es típico en approvals.",
+    difficulty: 2,
+  },
+  {
+    id: "ex-64",
+    topicId: "sf-reports",
+    kind: "mcq",
+    prompt:
+      "Data Import Wizard vs Data Loader: Wizard es mejor cuando…",
+    options: [
+      "Siempre cargas millones de filas",
+      "Cargas sencillas/pequeñas con interfaz guiada",
+      "Nunca importas Contacts",
+      "Solo exportas metadata",
+    ],
+    answerIndex: 1,
+    explanation: "Wizard = simple; Loader = volumen/control.",
+    difficulty: 2,
+  },
+  {
+    id: "ex-65",
+    topicId: "sf-sales",
+    kind: "mcq",
+    prompt:
+      "Opportunity Product añade…",
+    options: [
+      "Solo un layout",
+      "Líneas de producto/cantidad/precio a la Opportunity",
+      "Un permission set",
+      "Una queue",
+    ],
+    answerIndex: 1,
+    explanation: "Productos de oportunidad = detalle comercial del deal.",
+    difficulty: 2,
+  },
 ];
