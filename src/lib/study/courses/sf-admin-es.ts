@@ -1,4 +1,5 @@
 import type { Course, StudyCard, Topic } from "@/lib/study/types";
+import { SF_ADMIN_EXAM_STYLE } from "@/lib/study/courses/sf-admin-exam-practice";
 
 /**
  * Salesforce Platform Administrator — pack de estudio en español.
@@ -942,9 +943,9 @@ export const SALESFORCE_ADMIN_ES: Course = {
   title: "Salesforce Administrator",
   shortTitle: "SF Admin",
   language: "es",
-  examHint: "Platform Admin · 10 días · conceptos → práctica (sin dumps)",
+  examHint: "Platform Admin · estilo examen · práctica original (no dumps)",
   description:
-    "Primero entiendes el concepto en lenguaje sencillo; luego practicas con preguntas originales al estilo del examen.",
+    "Conceptos en español sencillo y luego escenarios al estilo del examen real. No usamos bancos filtrados tipo FreeCram.",
   topics,
-  cards,
+  cards: [...cards, ...SF_ADMIN_EXAM_STYLE],
 };
