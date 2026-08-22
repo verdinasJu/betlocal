@@ -2,6 +2,7 @@
 
 /**
  * Simulacro de examen: 60 preguntas, 105 min, umbral 68%.
+ * Navegación libre, explicación bajo demando y finalizar cuando quieras.
  */
 
 import { useEffect, useMemo, useState } from "react";
@@ -22,26 +23,45 @@ import type { Course, StudyCard } from "@/lib/study/types";
 
 type Phase = "intro" | "running" | "done";
 
+type QuestionResponse = {
+  answer: unknown;
+  correct: boolean;
+};
+
 export function ExamSession({ course }: { course: Course }) {
   const { grade } = useProgress();
   const [phase, setPhase] = useState<Phase>("intro");
   const [deck, setDeck] = useState<StudyCard[]>([]);
   const [index, setIndex] = useState(0);
-  const [answers, setAnswers] = useState<ExamAnswer[]>([]);
+  const [responses, setResponses] = useState<Record<number, QuestionResponse>>(
+    {}
+  );
   const [secondsLeft, setSecondsLeft] = useState(MOCK_EXAM.minutes * 60);
   const [result, setResult] = useState<ExamResult | null>(null);
-  const [feedback, setFeedback] = useState<"idle" | "ok" | "bad">("idle");
   const [multiPick, setMultiPick] = useState<number[]>([]);
+  const [showExplanation, setShowExplanation] = useState(false);
 
   const topicName = useMemo(() => {
     const map = new Map(course.topics.map((t) => [t.id, t.title]));
     return (id: string) => map.get(id) ?? id;
   }, [course.topics]);
 
+  const answeredCount = Object.keys(responses).length;
+
+  const buildFinalAnswers = (): ExamAnswer[] =>
+    deck.map((card, i) => {
+      const r = responses[i];
+      return {
+        cardId: card.id,
+        correct: r?.correct ?? false,
+        topicId: card.topicId,
+      };
+    });
+
   useEffect(() => {
     if (phase !== "running") return;
     if (secondsLeft <= 0) {
-      finish(answers, MOCK_EXAM.minutes);
+      finish(buildFinalAnswers(), MOCK_EXAM.minutes);
       return;
     }
     const t = window.setTimeout(() => setSecondsLeft((s) => s - 1), 1000);
@@ -52,9 +72,10 @@ export function ExamSession({ course }: { course: Course }) {
   const start = () => {
     setDeck(buildMockExam(course));
     setIndex(0);
-    setAnswers([]);
+    setResponses({});
     setResult(null);
-    setFeedback("idle");
+    setMultiPick([]);
+    setShowExplanation(false);
     setSecondsLeft(MOCK_EXAM.minutes * 60);
     setPhase("running");
   };
@@ -74,25 +95,41 @@ export function ExamSession({ course }: { course: Course }) {
 
   const submit = (answer: unknown) => {
     const card = deck[index];
-    if (!card || feedback !== "idle") return;
+    if (!card) return;
     const ok = isAnswerCorrect(card, answer);
     grade(card.id, ok);
-    const nextAnswers = [
-      ...answers,
-      { cardId: card.id, correct: ok, topicId: card.topicId },
-    ];
-    setAnswers(nextAnswers);
-    setFeedback(ok ? "ok" : "bad");
+    setResponses((prev) => ({
+      ...prev,
+      [index]: { answer, correct: ok },
+    }));
+    setShowExplanation(false);
+  };
 
-    window.setTimeout(() => {
-      setFeedback("idle");
+  const goTo = (nextIndex: number) => {
+    if (nextIndex < 0 || nextIndex >= deck.length) return;
+    setIndex(nextIndex);
+    setShowExplanation(false);
+    const saved = responses[nextIndex];
+    if (
+      saved &&
+      deck[nextIndex]?.kind === "mcq" &&
+      isMultiSelect(deck[nextIndex])
+    ) {
+      setMultiPick(Array.isArray(saved.answer) ? (saved.answer as number[]) : []);
+    } else {
       setMultiPick([]);
-      if (index + 1 >= deck.length) {
-        finish(nextAnswers);
-      } else {
-        setIndex(index + 1);
-      }
-    }, 650);
+    }
+  };
+
+  const requestFinish = () => {
+    const pending = deck.length - answeredCount;
+    const msg =
+      pending > 0
+        ? `Te faltan ${pending} preguntas sin responder. ¿Finalizar igualmente? Las no respondidas contarán como fallo.`
+        : "¿Finalizar el examen y ver tu nota?";
+    if (window.confirm(msg)) {
+      finish(buildFinalAnswers());
+    }
   };
 
   if (phase === "intro") {
@@ -107,14 +144,10 @@ export function ExamSession({ course }: { course: Course }) {
             <strong className="text-ink">{Math.round(MOCK_EXAM.passPct * 100)}%</strong>.
           </p>
           <ul className="list-disc space-y-1 pl-4 text-sm text-ink-muted">
-            <li>Escenarios al estilo del examen (práctica original de Estudia).</li>
-            <li>No es un dump de FreeCram ni del examen oficial.</li>
-            <li>Al terminar verás nota y desglose por tema.</li>
+            <li>Puedes volver atrás y cambiar respuestas.</li>
+            <li>Tras responder, pulsa «Ver explicación» para aprender.</li>
+            <li>Finaliza cuando quieras con el botón correspondiente.</li>
           </ul>
-          <p className="text-xs text-ink-faint leading-relaxed">
-            Banco actual: usa las preguntas mcq/tf de la app. Conviene haber
-            estudiado los temas antes (Aprender → practicar).
-          </p>
           <Button className="w-full" size="lg" onClick={start}>
             Empezar examen
           </Button>
@@ -182,15 +215,20 @@ export function ExamSession({ course }: { course: Course }) {
     );
   }
 
+  const current = responses[index];
+  const answered = Boolean(current);
   const mm = String(Math.floor(secondsLeft / 60)).padStart(2, "0");
   const ss = String(secondsLeft % 60).padStart(2, "0");
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2 rounded-xl border border-line/80 bg-surface/80 px-3 py-2 text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line/80 bg-surface/80 px-3 py-2 text-xs">
         <span className="font-medium text-ink">Examen</span>
         <span className="font-num text-ink-muted">
           {index + 1}/{deck.length}
+        </span>
+        <span className="font-num text-ink-faint">
+          {answeredCount} respondidas
         </span>
         <span
           className={`font-num ${
@@ -215,52 +253,42 @@ export function ExamSession({ course }: { course: Course }) {
                   <p className="text-xs text-ink-muted">
                     Elige {card.answerIndices!.length} opciones
                   </p>
-                  {card.options.map((opt, i) => {
-                    const picked = multiPick.includes(i);
-                    return (
-                      <button
-                        key={opt}
-                        type="button"
-                        disabled={feedback !== "idle"}
-                        onClick={() =>
-                          setMultiPick((prev) =>
-                            picked
-                              ? prev.filter((x) => x !== i)
-                              : [...prev, i]
-                          )
-                        }
-                        className={`w-full rounded-xl border px-4 py-3 text-left text-sm transition disabled:opacity-60 ${
-                          picked
-                            ? "border-brand bg-brand/10 text-ink"
-                            : "border-line bg-surface-2 text-ink hover:border-brand/40"
-                        }`}
-                      >
-                        {opt}
-                      </button>
-                    );
-                  })}
-                  <Button
-                    className="w-full"
-                    disabled={
-                      feedback !== "idle" ||
-                      multiPick.length !== card.answerIndices!.length
-                    }
-                    onClick={() => submit(multiPick)}
-                  >
-                    Confirmar
-                  </Button>
+                  {card.options.map((opt, i) => (
+                    <OptionButton
+                      key={opt}
+                      label={opt}
+                      state={optionState(card, i, current, multiPick.includes(i))}
+                      disabled={answered}
+                      onClick={() =>
+                        setMultiPick((prev) =>
+                          prev.includes(i)
+                            ? prev.filter((x) => x !== i)
+                            : [...prev, i]
+                        )
+                      }
+                    />
+                  ))}
+                  {!answered ? (
+                    <Button
+                      className="w-full"
+                      disabled={
+                        multiPick.length !== card.answerIndices!.length
+                      }
+                      onClick={() => submit(multiPick)}
+                    >
+                      Confirmar respuesta
+                    </Button>
+                  ) : null}
                 </>
               ) : (
                 card.options.map((opt, i) => (
-                  <button
+                  <OptionButton
                     key={opt}
-                    type="button"
-                    disabled={feedback !== "idle"}
+                    label={opt}
+                    state={optionState(card, i, current, current?.answer === i)}
+                    disabled={answered}
                     onClick={() => submit(i)}
-                    className="w-full rounded-xl border border-line bg-surface-2 px-4 py-3 text-left text-sm text-ink transition hover:border-brand/40 disabled:opacity-60"
-                  >
-                    {opt}
-                  </button>
+                  />
                 ))
               )}
             </div>
@@ -268,12 +296,38 @@ export function ExamSession({ course }: { course: Course }) {
 
           {card.kind === "tf" ? (
             <div className="grid grid-cols-2 gap-2">
-              <Button disabled={feedback !== "idle"} onClick={() => submit(true)}>
+              <Button
+                disabled={answered}
+                variant={current?.answer === true ? "default" : "secondary"}
+                className={
+                  answered
+                    ? current.answer === true
+                      ? current.correct
+                        ? "border-value bg-value/20"
+                        : "border-negative bg-negative/20"
+                      : card.answerTrue === true
+                        ? "border-value/50 bg-value/10"
+                        : ""
+                    : ""
+                }
+                onClick={() => submit(true)}
+              >
                 Verdadero
               </Button>
               <Button
-                disabled={feedback !== "idle"}
-                variant="secondary"
+                disabled={answered}
+                variant={current?.answer === false ? "default" : "secondary"}
+                className={
+                  answered
+                    ? current.answer === false
+                      ? current.correct
+                        ? "border-value bg-value/20"
+                        : "border-negative bg-negative/20"
+                      : card.answerTrue === false
+                        ? "border-value/50 bg-value/10"
+                        : ""
+                    : ""
+                }
                 onClick={() => submit(false)}
               >
                 Falso
@@ -281,17 +335,136 @@ export function ExamSession({ course }: { course: Course }) {
             </div>
           ) : null}
 
-          {feedback !== "idle" ? (
+          {answered ? (
             <p
               className={`text-sm font-semibold ${
-                feedback === "ok" ? "text-value" : "text-negative"
+                current!.correct ? "text-value" : "text-negative"
               }`}
             >
-              {feedback === "ok" ? "Correcto" : "Incorrecto"}
+              {current!.correct ? "Correcto" : "Incorrecto"}
             </p>
+          ) : null}
+
+          {answered ? (
+            <div className="space-y-2">
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={() => setShowExplanation((v) => !v)}
+              >
+                {showExplanation ? "Ocultar explicación" : "Ver explicación"}
+              </Button>
+              {showExplanation ? (
+                <div className="space-y-2 rounded-xl border border-line bg-surface-2 p-4">
+                  <p className="text-sm leading-relaxed text-ink-muted">
+                    {card.explanation}
+                  </p>
+                  {card.sourceUrl ? (
+                    <a
+                      href={card.sourceUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-block text-xs text-brand underline"
+                    >
+                      {card.sourceLabel ?? "Ver fuente"}
+                    </a>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
           ) : null}
         </CardContent>
       </Card>
+
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant="secondary"
+          className="flex-1 min-w-[7rem]"
+          disabled={index === 0}
+          onClick={() => goTo(index - 1)}
+        >
+          ← Anterior
+        </Button>
+        <Button
+          variant="secondary"
+          className="flex-1 min-w-[7rem]"
+          disabled={index >= deck.length - 1}
+          onClick={() => goTo(index + 1)}
+        >
+          Siguiente →
+        </Button>
+      </div>
+
+      <Button
+        variant="outline"
+        className="w-full border-negative/40 text-negative hover:bg-negative/10"
+        onClick={requestFinish}
+      >
+        Finalizar examen
+      </Button>
     </div>
+  );
+}
+
+type OptionVisual = "neutral" | "picked" | "correct" | "wrong";
+
+function optionState(
+  card: StudyCard,
+  optionIndex: number,
+  response: QuestionResponse | undefined,
+  isPickedNow: boolean
+): OptionVisual {
+  if (!response) {
+    return isPickedNow ? "picked" : "neutral";
+  }
+
+  const isCorrectOption =
+    card.kind === "mcq" &&
+    (isMultiSelect(card)
+      ? card.answerIndices!.includes(optionIndex)
+      : card.answerIndex === optionIndex);
+
+  const userPicked =
+    card.kind === "mcq" &&
+    (isMultiSelect(card)
+      ? Array.isArray(response.answer) &&
+        (response.answer as number[]).includes(optionIndex)
+      : response.answer === optionIndex);
+
+  if (userPicked && isCorrectOption) return "correct";
+  if (userPicked && !isCorrectOption) return "wrong";
+  if (!userPicked && isCorrectOption) return "correct";
+  return "neutral";
+}
+
+function OptionButton({
+  label,
+  state,
+  disabled,
+  onClick,
+}: {
+  label: string;
+  state: OptionVisual;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  const cls =
+    state === "correct"
+      ? "border-value/50 bg-value/15 text-value"
+      : state === "wrong"
+        ? "border-negative/50 bg-negative/15 text-negative"
+        : state === "picked"
+          ? "border-brand bg-brand/10 text-ink"
+          : "border-line bg-surface-2 text-ink hover:border-brand/40";
+
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={`w-full rounded-xl border px-4 py-3 text-left text-sm transition disabled:opacity-80 ${cls}`}
+    >
+      {label}
+    </button>
   );
 }
