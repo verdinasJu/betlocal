@@ -69,6 +69,19 @@ export function pickCards(
 
   let ordered = shuffle(ids);
 
+  // Priorizar fichas más difíciles en modos de examen/práctica.
+  if (
+    mode.id === "quiz" ||
+    mode.id === "boss" ||
+    mode.id === "streak"
+  ) {
+    ordered = shuffle(ids).sort((a, b) => {
+      const da = byId.get(a)?.difficulty ?? 1;
+      const db = byId.get(b)?.difficulty ?? 1;
+      return db - da;
+    });
+  }
+
   if (
     mode.id === "quiz" ||
     mode.id === "streak" ||
@@ -88,8 +101,31 @@ export function pickCards(
     .filter(Boolean);
 }
 
+function sameIndices(a: number[], b: number[]): boolean {
+  if (a.length !== b.length) return false;
+  const sa = [...a].sort((x, y) => x - y);
+  const sb = [...b].sort((x, y) => x - y);
+  return sa.every((v, i) => v === sb[i]);
+}
+
+export function isMultiSelect(card: StudyCard): boolean {
+  return (
+    card.kind === "mcq" &&
+    Array.isArray(card.answerIndices) &&
+    card.answerIndices.length > 1
+  );
+}
+
 export function isAnswerCorrect(card: StudyCard, answer: unknown): boolean {
-  if (card.kind === "mcq") return answer === card.answerIndex;
+  if (card.kind === "mcq") {
+    if (isMultiSelect(card)) {
+      return (
+        Array.isArray(answer) &&
+        sameIndices(answer as number[], card.answerIndices!)
+      );
+    }
+    return answer === card.answerIndex;
+  }
   if (card.kind === "tf") return answer === card.answerTrue;
   return false;
 }

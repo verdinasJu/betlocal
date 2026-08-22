@@ -30,9 +30,16 @@ function shuffle<T>(arr: T[]): T[] {
 export function buildMockExam(course: Course): StudyCard[] {
   const mcq = course.cards.filter((c) => c.kind === "mcq");
   const tf = course.cards.filter((c) => c.kind === "tf");
-  const byTopic = new Map<string, StudyCard[]>();
 
+  // Peso por dificultad: más preguntas difíciles en el simulacro.
+  const weightedMcq: StudyCard[] = [];
   for (const card of mcq) {
+    const copies = card.difficulty >= 3 ? 4 : card.difficulty === 2 ? 2 : 1;
+    for (let i = 0; i < copies; i++) weightedMcq.push(card);
+  }
+
+  const byTopic = new Map<string, StudyCard[]>();
+  for (const card of weightedMcq) {
     const list = byTopic.get(card.topicId) ?? [];
     list.push(card);
     byTopic.set(card.topicId, list);
@@ -59,6 +66,15 @@ export function buildMockExam(course: Course): StudyCard[] {
       added = true;
     }
     if (!added) break;
+  }
+
+  if (picked.length < MOCK_EXAM.questionCount) {
+    for (const card of shuffle(tf.filter((c) => c.difficulty >= 2))) {
+      if (picked.length >= MOCK_EXAM.questionCount) break;
+      if (used.has(card.id)) continue;
+      used.add(card.id);
+      picked.push(card);
+    }
   }
 
   if (picked.length < MOCK_EXAM.questionCount) {

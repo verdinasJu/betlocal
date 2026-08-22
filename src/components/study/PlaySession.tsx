@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { modeById } from "@/lib/study/games";
-import { pickCards, isAnswerCorrect } from "@/lib/study/session";
+import { pickCards, isAnswerCorrect, isMultiSelect } from "@/lib/study/session";
 import type { Course, StudyCard } from "@/lib/study/types";
 import type { ProgressMap } from "@/lib/study/srs";
 
@@ -41,6 +41,8 @@ export function PlaySession({
   const [secondsLeft, setSecondsLeft] = useState(mode?.seconds ?? null);
   const [lastOk, setLastOk] = useState<boolean | null>(null);
   const [explainOpen, setExplainOpen] = useState(modeId === "explain");
+  const [multiPick, setMultiPick] = useState<number[]>([]);
+  const [answered, setAnswered] = useState(0);
 
   // Parejas
   const pairCards = useMemo(
@@ -109,19 +111,21 @@ export function PlaySession({
 
   const card = deck[Math.min(index, deck.length - 1)] as StudyCard;
 
-  const finishIfNeeded = (nextIndex: number, nextLives: number | null) => {
+  const finishIfNeeded = (nextIndex: number, nextLives: number | null): boolean => {
     if (nextLives === 0) {
       setPhase("done");
-      return;
+      return true;
     }
     if (nextIndex >= deck.length) {
       setPhase("done");
-      return;
+      return true;
     }
     setIndex(nextIndex);
     setPhase(modeId === "explain" ? "ask" : "ask");
     setExplainOpen(modeId === "explain");
     setLastOk(null);
+    setMultiPick([]);
+    return false;
   };
 
   const submit = (answer: unknown) => {
@@ -129,6 +133,7 @@ export function PlaySession({
     const ok = isAnswerCorrect(card, answer);
     setLastOk(ok);
     onGrade(card.id, ok);
+    setAnswered((n) => n + 1);
     if (ok) {
       setScore((s) => s + 1);
       setStreak((s) => {
@@ -156,8 +161,8 @@ export function PlaySession({
       setPhase("done");
       return;
     }
-    finishIfNeeded(index + 1, nl);
-    setPhase("ask");
+    const finished = finishIfNeeded(index + 1, nl);
+    if (!finished) setPhase("ask");
   };
 
   const onPairTap = (key: string, cardId: string) => {
@@ -174,18 +179,23 @@ export function PlaySession({
 
     window.setTimeout(() => {
       if (same) {
-        setMatched((m) => new Set([...m, idA]));
+        setMatched((m) => {
+          const nextMatched = new Set([...m, idA]);
+          if (nextMatched.size >= pairCards.length) setPhase("done");
+          return nextMatched;
+        });
         onGrade(idA, true);
         setScore((s) => s + 1);
+        setAnswered((n) => n + 1);
         setStreak((s) => {
           const n = s + 1;
           setBestStreak((b) => Math.max(b, n));
           return n;
         });
-        if (matched.size + 1 >= pairCards.length) setPhase("done");
       } else {
         setStreak(0);
         onGrade(idA, false);
+        setAnswered((n) => n + 1);
       }
       setFlipped([]);
       setPairLock(false);
@@ -193,23 +203,16 @@ export function PlaySession({
   };
 
   if (phase === "done" || (modeId === "pairs" && matched.size >= pairCards.length && pairCards.length > 0)) {
+    const total =
+      modeId === "pairs" ? pairCards.length : Math.max(answered, deck.length);
     return (
       <Card>
         <CardContent className="space-y-4 p-5">
           <h2 className="text-xl font-semibold">Fin de partida</h2>
           <div className="grid grid-cols-3 gap-3">
             <Stat label="Aciertos" value={String(score)} />
+            <Stat label="Respondidas" value={`${answered}/${total}`} />
             <Stat label="Racha máx." value={String(bestStreak)} />
-            <Stat
-              label={mode.seconds ? "Tiempo" : "Vidas"}
-              value={
-                mode.seconds
-                  ? `${mode.seconds - (secondsLeft ?? 0)}s`
-                  : lives === null
-                    ? "—"
-                    : String(lives)
-              }
-            />
           </div>
           <p className="text-sm text-ink-muted leading-relaxed">
             El SRS ya actualizó las fichas. Lo fallado volverá pronto en Hoy.
@@ -316,16 +319,56 @@ export function PlaySession({
 
             {phase === "ask" && card.kind === "mcq" && card.options ? (
               <div className="space-y-2">
-                {card.options.map((opt, i) => (
-                  <button
-                    key={opt}
-                    type="button"
-                    onClick={() => submit(i)}
-                    className="w-full rounded-xl border border-line bg-surface-2 px-4 py-3 text-left text-sm text-ink transition hover:border-brand/40"
-                  >
-                    {opt}
-                  </button>
-                ))}
+                {isMultiSelect(card) ? (
+                  <>
+                    <p className="text-xs text-ink-muted">
+                      Elige {card.answerIndices!.length} opciones
+                    </p>
+                    {card.options.map((opt, i) => {
+                      const picked = multiPick.includes(i);
+                      return (
+                        <button
+                          key={opt}
+                          type="button"
+                          onClick={() =>
+                            setMultiPick((prev) =>
+                              picked
+                                ? prev.filter((x) => x !== i)
+                                : [...prev, i]
+                            )
+                          }
+                          className={`w-full rounded-xl border px-4 py-3 text-left text-sm transition ${
+                            picked
+                              ? "border-brand bg-brand/10 text-ink"
+                              : "border-line bg-surface-2 text-ink hover:border-brand/40"
+                          }`}
+                        >
+                          {opt}
+                        </button>
+                      );
+                    })}
+                    <Button
+                      className="w-full"
+                      disabled={
+                        multiPick.length !== card.answerIndices!.length
+                      }
+                      onClick={() => submit(multiPick)}
+                    >
+                      Confirmar
+                    </Button>
+                  </>
+                ) : (
+                  card.options.map((opt, i) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      onClick={() => submit(i)}
+                      className="w-full rounded-xl border border-line bg-surface-2 px-4 py-3 text-left text-sm text-ink transition hover:border-brand/40"
+                    >
+                      {opt}
+                    </button>
+                  ))
+                )}
               </div>
             ) : null}
 

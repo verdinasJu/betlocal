@@ -24,7 +24,10 @@ export type StudyCard = {
   kind: CardKind;
   prompt: string;
   options?: string[];
+  /** Una sola respuesta correcta (mcq clásico). */
   answerIndex?: number;
+  /** Varias respuestas correctas (estilo examen "elige 2/3"). */
+  answerIndices?: number[];
   answerTrue?: boolean;
   term?: string;
   definition?: string;

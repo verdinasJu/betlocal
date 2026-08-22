@@ -16,7 +16,7 @@ import {
   type ExamAnswer,
   type ExamResult,
 } from "@/lib/study/exam";
-import { isAnswerCorrect } from "@/lib/study/session";
+import { isAnswerCorrect, isMultiSelect } from "@/lib/study/session";
 import { useProgress } from "@/hooks/useProgress";
 import type { Course, StudyCard } from "@/lib/study/types";
 
@@ -31,6 +31,7 @@ export function ExamSession({ course }: { course: Course }) {
   const [secondsLeft, setSecondsLeft] = useState(MOCK_EXAM.minutes * 60);
   const [result, setResult] = useState<ExamResult | null>(null);
   const [feedback, setFeedback] = useState<"idle" | "ok" | "bad">("idle");
+  const [multiPick, setMultiPick] = useState<number[]>([]);
 
   const topicName = useMemo(() => {
     const map = new Map(course.topics.map((t) => [t.id, t.title]));
@@ -85,6 +86,7 @@ export function ExamSession({ course }: { course: Course }) {
 
     window.setTimeout(() => {
       setFeedback("idle");
+      setMultiPick([]);
       if (index + 1 >= deck.length) {
         finish(nextAnswers);
       } else {
@@ -208,17 +210,59 @@ export function ExamSession({ course }: { course: Course }) {
 
           {card.kind === "mcq" && card.options ? (
             <div className="space-y-2">
-              {card.options.map((opt, i) => (
-                <button
-                  key={opt}
-                  type="button"
-                  disabled={feedback !== "idle"}
-                  onClick={() => submit(i)}
-                  className="w-full rounded-xl border border-line bg-surface-2 px-4 py-3 text-left text-sm text-ink transition hover:border-brand/40 disabled:opacity-60"
-                >
-                  {opt}
-                </button>
-              ))}
+              {isMultiSelect(card) ? (
+                <>
+                  <p className="text-xs text-ink-muted">
+                    Elige {card.answerIndices!.length} opciones
+                  </p>
+                  {card.options.map((opt, i) => {
+                    const picked = multiPick.includes(i);
+                    return (
+                      <button
+                        key={opt}
+                        type="button"
+                        disabled={feedback !== "idle"}
+                        onClick={() =>
+                          setMultiPick((prev) =>
+                            picked
+                              ? prev.filter((x) => x !== i)
+                              : [...prev, i]
+                          )
+                        }
+                        className={`w-full rounded-xl border px-4 py-3 text-left text-sm transition disabled:opacity-60 ${
+                          picked
+                            ? "border-brand bg-brand/10 text-ink"
+                            : "border-line bg-surface-2 text-ink hover:border-brand/40"
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    );
+                  })}
+                  <Button
+                    className="w-full"
+                    disabled={
+                      feedback !== "idle" ||
+                      multiPick.length !== card.answerIndices!.length
+                    }
+                    onClick={() => submit(multiPick)}
+                  >
+                    Confirmar
+                  </Button>
+                </>
+              ) : (
+                card.options.map((opt, i) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    disabled={feedback !== "idle"}
+                    onClick={() => submit(i)}
+                    className="w-full rounded-xl border border-line bg-surface-2 px-4 py-3 text-left text-sm text-ink transition hover:border-brand/40 disabled:opacity-60"
+                  >
+                    {opt}
+                  </button>
+                ))
+              )}
             </div>
           ) : null}
 

@@ -1,8 +1,9 @@
 {
+  "id": "estudia-pwa",
   "name": "Estudia",
   "short_name": "Estudia",
   "description": "Tests, juegos y repetición espaciada para certificaciones y asignaturas.",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "display": "standalone",
   "background_color": "#0b1020",
   "theme_color": "#0b1020",
